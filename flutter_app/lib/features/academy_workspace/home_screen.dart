@@ -663,7 +663,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => DayAttendanceScreen(date: dateToday),
+                                    builder: (_) => DayAttendanceScreen(
+                                      date: dateToday,
+                                      initialBatchId: c['id']?.toString(),
+                                    ),
                                   ),
                                 ),
                                 style: ElevatedButton.styleFrom(

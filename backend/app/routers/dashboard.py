@@ -50,19 +50,22 @@ def get_dashboard_stats(
         ).all()
         batch_count = len(all_batches)
 
-        # 3. Today's Batches
-        today_name = datetime.now().strftime("%A")
-        todays_batches = [b for b in all_batches if b.schedule_days and today_name.lower() in b.schedule_days.lower()]
-        if not todays_batches:
-            todays_batches = all_batches[:3]
+        # 3. All Academy Batches
+        today_name = datetime.now().strftime("%A").lower()
 
         todays_classes_data = []
-        for b in todays_batches:
+        for b in all_batches:
+            is_today = bool(b.schedule_days and today_name in b.schedule_days.lower())
+            timing_str = f"{b.start_time} - {b.end_time}" if (b.start_time and b.end_time) else (b.start_time or "Timing not set")
+            if b.schedule_days:
+                timing_str = f"{timing_str} • {b.schedule_days}"
+
             todays_classes_data.append({
                 "id": b.id,
                 "name": b.name,
-                "timing": f"{b.start_time} - {b.end_time}" if (b.start_time and b.end_time) else (b.start_time or "Timing not available"),
-                "category": "Chess",
+                "timing": timing_str,
+                "category": b.level or "Chess",
+                "is_today": is_today,
             })
 
         # 4. Total Income & Outstanding Dues
