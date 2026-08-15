@@ -183,7 +183,7 @@ def send_payment_invoice_email(
 
     student_email = getattr(student, 'email', None)
     parent_email = parent.email if parent and parent.email else None
-    to_addr = target_email or parent_email or student_email
+    to_addr = target_email or parent_email or student_email or current_user.email
 
     if not to_addr:
         raise HTTPException(

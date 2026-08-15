@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -48,9 +49,9 @@ class _AcademyShellState extends State<AcademyShell> {
   }
 
   void _playNotificationChime() {
-    if (kIsWeb) {
-      // Audio chime on web
-    }
+    SystemSound.play(SystemSoundType.alert);
+    HapticFeedback.heavyImpact();
+    HapticFeedback.vibrate();
   }
 
   Future<void> _checkNotifications() async {

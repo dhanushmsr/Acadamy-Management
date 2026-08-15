@@ -1,22 +1,4 @@
-"""
-Transactional email: a plain SMTP sender, plus one shared HTML template
-for payment receipts.
-
-The template itself (layout, structure, styling) is the same Python
-function for every academy - there is exactly one render_invoice_html()
-in this codebase. What makes each email look like it belongs to that
-specific academy is that every academy-identifying value (name, logo,
-address, phone, tagline) is passed in as a parameter at send-time, read
-fresh from that academy's own row/document. Nothing about branding is
-hardcoded here or duplicated per academy - change an academy's logo in
-its profile and the very next receipt uses the new one automatically.
-
-Uses plain SMTP (works with a Gmail App Password) rather than a
-dedicated transactional-email API so it needs zero extra signups beyond
-what the team already has. Swap smtp_host/port for a different
-provider's SMTP relay later without touching any calling code - same
-swap-the-provider pattern as integrations/whatsapp.py.
-"""
+import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -24,31 +6,11 @@ from typing import Optional
 
 from app.core.config import settings
 
+logger = logging.getLogger("email_sender")
+
 
 class EmailSendError(Exception):
     """Raised when the SMTP server rejects or fails to send a message."""
-
-
-def _connect_smtp_ssl_ipv4(host: str, port: int = 465, timeout: int = 20):
-    """Create SMTP_SSL connection forcing IPv4 to avoid Render IPv6 issues."""
-    import socket as _socket
-    addr_info = _socket.getaddrinfo(host, port, _socket.AF_INET)
-    if not addr_info:
-        raise EmailSendError(f"Cannot resolve {host} to IPv4")
-    ipv4_addr = addr_info[0][4][0]
-    return smtplib.SMTP_SSL(ipv4_addr, port, timeout=timeout)
-
-
-def _connect_smtp_tls_ipv4(host: str, port: int = 587, timeout: int = 20):
-    """Create SMTP connection forcing IPv4, then STARTTLS."""
-    import socket as _socket
-    addr_info = _socket.getaddrinfo(host, port, _socket.AF_INET)
-    if not addr_info:
-        raise EmailSendError(f"Cannot resolve {host} to IPv4")
-    ipv4_addr = addr_info[0][4][0]
-    server = smtplib.SMTP(ipv4_addr, port, timeout=timeout)
-    server.starttls()
-    return server
 
 
 def send_email(to_email: str, subject: str, html_body: str) -> None:
@@ -59,53 +21,41 @@ def send_email(to_email: str, subject: str, html_body: str) -> None:
     user = settings.smtp_username.strip()
     from_email = (settings.smtp_from_email or user).strip()
 
-    message = MIMEMultipart("alternative")
-    message["Subject"] = subject
-    message["From"] = from_email
-    message["To"] = to_email
-    message.attach(MIMEText(html_body, "html"))
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"Academy Workspace <{from_email}>"
+    msg["To"] = to_email
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-    # Render blocks IPv6 outbound SMTP. Force IPv4 connections.
     errors = []
 
-    # Attempt 1: SSL on port 465 (forced IPv4)
+    # Strategy 1: Standard TLS on Port 587 with explicit EHLO
     try:
-        server = _connect_smtp_ssl_ipv4(settings.smtp_host, 465)
+        server = smtplib.SMTP(settings.smtp_host, 587, timeout=12)
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
         server.login(user, pwd)
-        server.sendmail(from_email, to_email, message.as_string())
+        server.sendmail(from_email, [to_email], msg.as_string())
         server.quit()
+        logger.info(f"Email sent successfully to {to_email} via TLS 587")
         return
     except Exception as e:
-        errors.append(f"SSL-465-IPv4: {e}")
+        logger.warning(f"SMTP TLS 587 attempt failed: {e}")
+        errors.append(f"TLS-587: {e}")
 
-    # Attempt 2: STARTTLS on port 587 (forced IPv4)
+    # Strategy 2: SSL on Port 465 with explicit EHLO
     try:
-        server = _connect_smtp_tls_ipv4(settings.smtp_host, settings.smtp_port)
+        server = smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=12)
+        server.ehlo()
         server.login(user, pwd)
-        server.sendmail(from_email, to_email, message.as_string())
+        server.sendmail(from_email, [to_email], msg.as_string())
         server.quit()
+        logger.info(f"Email sent successfully to {to_email} via SSL 465")
         return
     except Exception as e:
-        errors.append(f"TLS-587-IPv4: {e}")
-
-    # Attempt 3: Standard SMTP_SSL (let OS choose)
-    try:
-        with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=15) as server:
-            server.login(user, pwd)
-            server.sendmail(from_email, to_email, message.as_string())
-            return
-    except Exception as e:
-        errors.append(f"SSL-465-default: {e}")
-
-    # Attempt 4: Standard SMTP 587 (let OS choose)
-    try:
-        with smtplib.SMTP(settings.smtp_host, 587, timeout=15) as server:
-            server.starttls()
-            server.login(user, pwd)
-            server.sendmail(from_email, to_email, message.as_string())
-            return
-    except Exception as e:
-        errors.append(f"TLS-587-default: {e}")
+        logger.warning(f"SMTP SSL 465 attempt failed: {e}")
+        errors.append(f"SSL-465: {e}")
 
     raise EmailSendError(" | ".join(errors))
 
