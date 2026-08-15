@@ -99,7 +99,7 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Enter a new password for the academy admin account:',
                 style: TextStyle(fontSize: 13, color: Colors.black70),
               ),
@@ -465,7 +465,7 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
           final ac = _academies[index];
           final isActive = ac['status'] == 'active';
           final logoUrl = ac['logo_url'];
-          final baseUrl = context.read<ApiClient>().baseUrl;
+          final baseUrl = ApiClient.baseUrl;
 
           String? fullLogoUrl;
           if (logoUrl != null && logoUrl.isNotEmpty) {
