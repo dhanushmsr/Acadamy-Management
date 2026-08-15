@@ -8,7 +8,7 @@ from app.core.deps import require_role, get_current_user
 from app.core.security import hash_password
 from app.db import get_db
 from app.models import Academy, AcademyStatus, AuditLog, Student, User, UserRole
-from app.schemas import AcademyCreate, AcademyCreatedOut, AcademyOut, AcademyUpdate
+from app.schemas import AcademyCreate, AcademyCreatedOut, AcademyOut, AcademyUpdate, PasswordResetPayload
 
 router = APIRouter(prefix="/academies", tags=["academies"])
 
@@ -229,4 +229,34 @@ def delete_logo(
         db.commit()
         db.refresh(academy)
     return academy
+
+
+@router.post("/{academy_id}/reset-password")
+def reset_academy_password(
+    academy_id: str,
+    payload: PasswordResetPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.super_admin)),
+):
+    academy = db.query(Academy).filter(Academy.id == academy_id).first()
+    if not academy:
+        raise HTTPException(status_code=404, detail="Academy not found")
+
+    admin_user = (
+        db.query(User)
+        .filter(User.academy_id == academy_id, User.role == UserRole.academy_admin)
+        .first()
+    )
+    if not admin_user:
+        admin_user = db.query(User).filter(User.academy_id == academy_id).first()
+
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="No user account found for this academy")
+
+    if len(payload.new_password.strip()) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+
+    admin_user.hashed_password = hash_password(payload.new_password.strip())
+    db.commit()
+    return {"message": f"Password reset successfully for {admin_user.email}"}
 

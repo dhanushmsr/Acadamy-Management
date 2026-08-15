@@ -298,6 +298,15 @@ class ApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  Future<void> resetAcademyPassword(String academyId, String newPassword) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/academies/$academyId/reset-password'),
+      headers: _headers,
+      body: jsonEncode({'new_password': newPassword}),
+    );
+    if (res.statusCode != 200) throw Exception('Failed to reset password: ${res.body}');
+  }
+
   Future<void> updateAcademy(String id, Map<String, dynamic> data) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/academies/$id'),

@@ -13,6 +13,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class PasswordResetPayload(BaseModel):
+    new_password: str
+
+
 class AuthTokens(BaseModel):
     access_token: str
     token_type: str = "bearer"
