@@ -507,6 +507,49 @@ class ApiClient {
     if (res.statusCode != 201) throw Exception('Failed to register for tournament: ${res.body}');
   }
 
+  Future<Map<String, dynamic>> getPublicTournament(String tournamentId) async {
+    final res = await http.get(Uri.parse('$baseUrl/tournaments/public/$tournamentId'));
+    if (res.statusCode != 200) {
+      throw Exception('Failed to load tournament: ${res.body}');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createRazorpayOrder(String tournamentId, Map<String, dynamic> payload) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/tournaments/public/$tournamentId/create-order'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('Failed to create Razorpay order: ${res.body}');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> verifyTournamentPayment(Map<String, dynamic> payload) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/tournaments/public/verify-payment'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode != 200) {
+      throw Exception('Payment verification failed: ${res.body}');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> getTournamentRegistrations(String tournamentId) async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/tournaments/$tournamentId/registrations'),
+      headers: _headers,
+    );
+    if (res.statusCode != 200) {
+      throw Exception('Failed to load roster: ${res.body}');
+    }
+    return jsonDecode(res.body) as List<dynamic>;
+  }
+
   // ---- Materials ----
 
   Future<List<MaterialSummary>> getMaterials() async {
@@ -551,6 +594,8 @@ class TournamentSummary {
   final String id;
   final String name;
   final String? organizerName;
+  final String? organizerPhone;
+  final String? organizerEmail;
   final String tournamentType;
   final String sports;
   final String category;
@@ -559,9 +604,13 @@ class TournamentSummary {
   final String? endDate;
   final String? reportingTime;
   final String? venue;
+  final String? cityOrPlace;
   final int? feeAmount;
   final String? notes;
+  final String? rulesAndPrizes;
   final String? resultUrl;
+  final String? bannerUrl;
+  final String? brochureUrl;
   final int participantCount;
   final int totalCollected;
 
@@ -569,6 +618,8 @@ class TournamentSummary {
     required this.id,
     required this.name,
     this.organizerName,
+    this.organizerPhone,
+    this.organizerEmail,
     required this.tournamentType,
     required this.sports,
     required this.category,
@@ -577,9 +628,13 @@ class TournamentSummary {
     this.endDate,
     this.reportingTime,
     this.venue,
+    this.cityOrPlace,
     this.feeAmount,
     this.notes,
+    this.rulesAndPrizes,
     this.resultUrl,
+    this.bannerUrl,
+    this.brochureUrl,
     required this.participantCount,
     required this.totalCollected,
   });
@@ -589,17 +644,23 @@ class TournamentSummary {
       id: json['id'] as String,
       name: json['name'] as String,
       organizerName: json['organizer_name'] as String?,
-      tournamentType: json['tournament_type'] as String,
+      organizerPhone: json['organizer_phone'] as String?,
+      organizerEmail: json['organizer_email'] as String?,
+      tournamentType: json['tournament_type'] as String? ?? 'in_house',
       sports: json['sports'] as String? ?? 'Chess',
-      category: json['category'] as String? ?? '1 Category',
+      category: json['category'] as String? ?? 'Open',
       status: json['status'] as String? ?? 'open',
       startDate: json['start_date'] as String?,
       endDate: json['end_date'] as String?,
       reportingTime: json['reporting_time'] as String?,
       venue: json['venue'] as String?,
+      cityOrPlace: json['city_or_place'] as String?,
       feeAmount: json['fee_amount'] as int?,
       notes: json['notes'] as String?,
+      rulesAndPrizes: json['rules_and_prizes'] as String?,
       resultUrl: json['result_url'] as String?,
+      bannerUrl: json['banner_url'] as String?,
+      brochureUrl: json['brochure_url'] as String?,
       participantCount: json['participant_count'] as int? ?? 0,
       totalCollected: json['total_collected'] as int? ?? 0,
     );

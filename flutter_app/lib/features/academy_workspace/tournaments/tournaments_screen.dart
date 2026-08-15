@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/auth/api_client.dart';
@@ -47,6 +48,36 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       ),
       builder: (ctx) => const _NewEventFormModal(),
     ).then((_) => _loadTournaments());
+  }
+
+  void _showRosterModal(TournamentSummary t) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _RosterModal(tournament: t),
+    );
+  }
+
+  void _copyPublicLink(String tournamentId) {
+    final link = 'https://acdmanage.vercel.app/#/tournament/$tournamentId';
+    Clipboard.setData(ClipboardData(text: link));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.link, color: Colors.white),
+            const SizedBox(width: 10),
+            Expanded(child: Text('Copied Public Tournament Link: $link')),
+          ],
+        ),
+        backgroundColor: const Color(0xFF1E293B),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -158,7 +189,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        'Completed',
+                                        'Completed / Link Expired',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: _selectedTab == 'completed' ? const Color(0xFF1E2142) : Colors.grey[600],
@@ -172,67 +203,48 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.tune, color: Color(0xFF1E2142)),
-                          onPressed: () {},
-                        ),
-                      ),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Tournament Subtitle Count
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '${filtered.length} ${_selectedTab == 'open' ? 'open' : 'completed'} tournament${filtered.length == 1 ? '' : 's'}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
-                ),
-              ),
-            ),
-
-            // Tournament List Body
+            // Tournament List or Error
             Expanded(
-              child: _error != null
-                  ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-                  : _tournaments == null
-                      ? const Center(child: CircularProgressIndicator())
+              child: _tournaments == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(child: Text(_error!))
                       : filtered.isEmpty
                           ? Center(
-                              child: Text(
-                                'No ${_selectedTab == 'open' ? 'open' : 'completed'} tournaments found.',
-                                style: const TextStyle(color: Colors.grey),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.emoji_events_outlined, size: 64, color: Colors.grey[400]),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No ${_selectedTab.capitalize()} Tournaments Found',
+                                    style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                                  ),
+                                ],
                               ),
                             )
                           : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.all(16),
                               itemCount: filtered.length,
-                              itemBuilder: (ctx, i) {
-                                final t = filtered[i];
-                                return _buildTournamentCard(t);
+                              itemBuilder: (context, index) {
+                                return _buildTournamentCard(filtered[index]);
                               },
                             ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _showNewEventModal,
         backgroundColor: const Color(0xFF1E2142),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Create Tournament', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -259,16 +271,28 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            t.name.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E2142),
-              letterSpacing: 0.5,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  t.name.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E2142),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Copy Public Web Link',
+                icon: const Icon(Icons.share_outlined, color: Color(0xFF2563EB)),
+                onPressed: () => _copyPublicLink(t.id),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               // Badge 1: Sports ("Chess")
@@ -332,6 +356,131 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
               ),
             ],
           ),
+          const Divider(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.link_rounded, size: 18),
+                  label: const Text('Copy Web URL'),
+                  onPressed: () => _copyPublicLink(t.id),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E2142),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.people_alt_outlined, size: 18),
+                  label: Text('Roster (${t.participantCount})'),
+                  onPressed: () => _showRosterModal(t),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RosterModal extends StatefulWidget {
+  final TournamentSummary tournament;
+
+  const _RosterModal({required this.tournament});
+
+  @override
+  State<_RosterModal> createState() => _RosterModalState();
+}
+
+class _RosterModalState extends State<_RosterModal> {
+  bool _loading = true;
+  String? _error;
+  List<dynamic> _roster = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoster();
+  }
+
+  Future<void> _loadRoster() async {
+    try {
+      final list = await context.read<ApiClient>().getTournamentRegistrations(widget.tournament.id);
+      if (mounted) {
+        setState(() {
+          _roster = list;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.tournament.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text('Registered Participants Roster • Total: ₹${widget.tournament.totalCollected}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  ],
+                ),
+              ),
+              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+            ],
+          ),
+          const Divider(height: 20),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(child: Text(_error!))
+                    : _roster.isEmpty
+                        ? const Center(child: Text('No paid registrations yet.'))
+                        : ListView.builder(
+                            itemCount: _roster.length,
+                            itemBuilder: (context, index) {
+                              final r = _roster[index];
+                              return Card(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                margin: const EdgeInsets.only(bottom: 10),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.indigo.shade50,
+                                    child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                  ),
+                                  title: Text(r['participant_name'] ?? 'Participant', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text('📞 ${r['participant_phone'] ?? 'N/A'} • ✉️ ${r['participant_email'] ?? 'N/A'}\nRazorpay Payment ID: ${r['razorpay_payment_id'] ?? 'PAID'}', style: const TextStyle(fontSize: 12)),
+                                  trailing: Text('₹${r['amount_paid'] ?? widget.tournament.feeAmount ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 15)),
+                                ),
+                              );
+                            },
+                          ),
+          ),
         ],
       ),
     );
@@ -348,34 +497,24 @@ class _NewEventFormModal extends StatefulWidget {
 class _NewEventFormModalState extends State<_NewEventFormModal> {
   final _nameCtrl = TextEditingController();
   final _organizerCtrl = TextEditingController();
+  final _organizerPhoneCtrl = TextEditingController();
+  final _organizerEmailCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  final _rulesCtrl = TextEditingController();
   final _resultUrlCtrl = TextEditingController();
+  final _bannerUrlCtrl = TextEditingController();
   final _feeCtrl = TextEditingController();
   final _venueCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
 
   String _eventType = 'in_house';
   String _sports = 'Chess';
-  String _category = '1 Category';
+  String _category = 'Open';
   DateTime _startDate = DateTime.now();
-  DateTime _endDate = DateTime.now();
-  TimeOfDay _reportingTime = const TimeOfDay(hour: 12, minute: 0);
+  DateTime _endDate = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _reportingTime = const TimeOfDay(hour: 9, minute: 0);
 
-  String? _bannerFileName;
-  String? _brochureFileName;
   bool _isSaving = false;
-
-  Future<void> _pickFile(bool isBanner) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg']);
-    if (result != null) {
-      setState(() {
-        if (isBanner) {
-          _bannerFileName = result.files.single.name;
-        } else {
-          _brochureFileName = result.files.single.name;
-        }
-      });
-    }
-  }
 
   Future<void> _submit() async {
     if (_nameCtrl.text.trim().isEmpty) {
@@ -387,18 +526,32 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
 
     setState(() => _isSaving = true);
     try {
+      final repDateTime = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+        _reportingTime.hour,
+        _reportingTime.minute,
+      );
+
       final payload = {
         'name': _nameCtrl.text.trim(),
         'organizer_name': _organizerCtrl.text.trim(),
+        'organizer_phone': _organizerPhoneCtrl.text.trim(),
+        'organizer_email': _organizerEmailCtrl.text.trim(),
         'tournament_type': _eventType,
         'sports': _sports,
         'category': _category,
         'start_date': _startDate.toIso8601String(),
         'end_date': _endDate.toIso8601String(),
+        'reporting_time': repDateTime.toIso8601String(),
         'venue': _venueCtrl.text.trim(),
+        'city_or_place': _cityCtrl.text.trim(),
         'fee_amount': int.tryParse(_feeCtrl.text.trim()) ?? 0,
         'notes': _notesCtrl.text.trim(),
+        'rules_and_prizes': _rulesCtrl.text.trim(),
         'result_url': _resultUrlCtrl.text.trim(),
+        'banner_url': _bannerUrlCtrl.text.trim(),
         'status': 'open',
       };
 
@@ -429,7 +582,7 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, {String? hint, int maxLines = 1}) {
+  Widget _buildInputField(String label, TextEditingController controller, {String? hint, int maxLines = 1, TextInputType? keyboardType}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -443,6 +596,7 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
           child: TextField(
             controller: controller,
             maxLines: maxLines,
+            keyboardType: keyboardType,
             decoration: InputDecoration(
               hintText: hint,
               border: InputBorder.none,
@@ -472,7 +626,7 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('New Event', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E2142))),
+                const Text('Create Dynamic Tournament', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E2142))),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
@@ -494,8 +648,15 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
                 children: [
                   // SECTION 1: Basic Details
                   _buildSectionHeader(Icons.emoji_events_outlined, 'Basic Details'),
-                  _buildInputField('Tournament Name', _nameCtrl),
-                  _buildInputField('Organizer Name', _organizerCtrl),
+                  _buildInputField('Tournament Name *', _nameCtrl, hint: 'e.g. Annual Chess Championship 2026'),
+                  _buildInputField('Organizer Name', _organizerCtrl, hint: 'e.g. Master Rajesh'),
+                  Row(
+                    children: [
+                      Expanded(child: _buildInputField('Organizer Phone', _organizerPhoneCtrl, hint: '9876543210', keyboardType: TextInputType.phone)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildInputField('Organizer Email', _organizerEmailCtrl, hint: 'organizer@academy.com', keyboardType: TextInputType.emailAddress)),
+                    ],
+                  ),
 
                   const Text('Sports', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
                   const SizedBox(height: 6),
@@ -514,7 +675,7 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
                           child: Icon(Icons.workspace_premium, size: 14, color: Colors.white),
                         ),
                         SizedBox(width: 8),
-                        Text('Chess', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E2142))),
+                        Text('Chess / General Sports', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E2142))),
                       ],
                     ),
                   ),
@@ -566,159 +727,99 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
 
                   // SECTION 2: Date & Venue
                   _buildSectionHeader(Icons.calendar_today_outlined, 'Date & Venue'),
-                  const Text('Start Date', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showDatePicker(context: context, initialDate: _startDate, firstDate: DateTime(2020), lastDate: DateTime(2030));
-                      if (picked != null) setState(() => _startDate = picked);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(16)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(startStr, style: const TextStyle(fontSize: 15, color: Color(0xFF1E2142))),
-                          const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  const Text('End Date', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showDatePicker(context: context, initialDate: _endDate, firstDate: DateTime(2020), lastDate: DateTime(2030));
-                      if (picked != null) setState(() => _endDate = picked);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(16)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(endStr, style: const TextStyle(fontSize: 15, color: Color(0xFF1E2142))),
-                          const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  const Text('Reporting Time', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(16)),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(startStr, style: const TextStyle(fontSize: 14)),
-                              const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
-                            ],
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Start Date', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 6),
+                            GestureDetector(
+                              onTap: () async {
+                                final picked = await showDatePicker(context: context, initialDate: _startDate, firstDate: DateTime(2020), lastDate: DateTime(2030));
+                                if (picked != null) setState(() => _startDate = picked);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(16)),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(startStr, style: const TextStyle(fontSize: 14, color: Color(0xFF1E2142))),
+                                    const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () async {
-                            final picked = await showTimePicker(context: context, initialTime: _reportingTime);
-                            if (picked != null) setState(() => _reportingTime = picked);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(16)),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(timeStr, style: const TextStyle(fontSize: 14)),
-                                const Icon(Icons.access_time, size: 18, color: Colors.grey),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInputField('Venue', _venueCtrl, hint: 'e.g. Tenkasi Indoor Stadium'),
-
-                  // SECTION 3: Fee Details
-                  _buildSectionHeader(Icons.account_balance_wallet_outlined, 'Fee Details'),
-                  _buildInputField('Fee Amount (₹)', _feeCtrl, hint: 'e.g. 500'),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Category', style: TextStyle(fontSize: 14, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade300)),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_category, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.chevron_right, size: 18),
+                            const Text('End Date', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 6),
+                            GestureDetector(
+                              onTap: () async {
+                                final picked = await showDatePicker(context: context, initialDate: _endDate, firstDate: DateTime(2020), lastDate: DateTime(2030));
+                                if (picked != null) setState(() => _endDate = picked);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(16)),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(endStr, style: const TextStyle(fontSize: 14, color: Color(0xFF1E2142))),
+                                    const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildInputField('Notes', _notesCtrl, maxLines: 3),
+                  const SizedBox(height: 12),
 
-                  // SECTION 4: Website Configurations
-                  _buildSectionHeader(Icons.language_outlined, 'Website Configurations'),
-                  _buildInputField('Result URL', _resultUrlCtrl),
-
-                  const Text('Event Banner', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
+                  const Text('Reporting Time', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
                   const SizedBox(height: 6),
                   GestureDetector(
-                    onTap: () => _pickFile(true),
+                    onTap: () async {
+                      final picked = await showTimePicker(context: context, initialTime: _reportingTime);
+                      if (picked != null) setState(() => _reportingTime = picked);
+                    },
                     child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF94A3B8), style: BorderStyle.solid),
-                      ),
-                      child: Center(
-                        child: Text(
-                          _bannerFileName ?? 'Browse File',
-                          style: const TextStyle(color: Color(0xFF4B5563), fontWeight: FontWeight.bold),
-                        ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(color: const Color(0xFFF0F7FF), borderRadius: BorderRadius.circular(16)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(timeStr, style: const TextStyle(fontSize: 14)),
+                          const Icon(Icons.access_time, size: 18, color: Colors.grey),
+                        ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
+                  _buildInputField('Venue / Stadium Name', _venueCtrl, hint: 'e.g. Tenkasi Indoor Stadium'),
+                  _buildInputField('City / Place', _cityCtrl, hint: 'e.g. Tenkasi / Chennai'),
 
-                  const Text('Brochure', style: TextStyle(fontSize: 13, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () => _pickFile(false),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF94A3B8), style: BorderStyle.solid),
-                      ),
-                      child: Center(
-                        child: Text(
-                          _brochureFileName ?? 'Browse File',
-                          style: const TextStyle(color: Color(0xFF4B5563), fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ),
+                  // SECTION 3: Fee Details
+                  _buildSectionHeader(Icons.account_balance_wallet_outlined, 'Fee Details & Rules'),
+                  _buildInputField('Entry Fee Amount (₹) *', _feeCtrl, hint: 'e.g. 500', keyboardType: TextInputType.number),
+                  _buildInputField('Rules, Format & Prizes', _rulesCtrl, hint: 'e.g. 5 Rounds Swiss League, Trophies for Top 10...', maxLines: 3),
+                  _buildInputField('Additional Notes', _notesCtrl, maxLines: 2),
+
+                  // SECTION 4: Website Configurations
+                  _buildSectionHeader(Icons.language_outlined, 'Website Media Banner & URLs'),
+                  _buildInputField('Event Banner Image URL', _bannerUrlCtrl, hint: 'https://example.com/banner.jpg'),
+                  _buildInputField('Result / Chess-Results URL', _resultUrlCtrl, hint: 'https://chess-results.com/...'),
+
                   const SizedBox(height: 24),
 
                   // Submit Button
@@ -733,7 +834,7 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
                       ),
                       child: _isSaving
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Save Event', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          : const Text('Publish Tournament Session', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -744,5 +845,12 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
         ],
       ),
     );
+  }
+}
+
+extension StringExtension on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }
