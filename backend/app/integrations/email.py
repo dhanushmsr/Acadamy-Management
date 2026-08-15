@@ -90,12 +90,22 @@ def send_email(to_email: str, subject: str, html_body: str) -> None:
 
     # Attempt 3: Standard SMTP_SSL (let OS choose)
     try:
-        with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=20) as server:
+        with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=15) as server:
             server.login(user, pwd)
             server.sendmail(from_email, to_email, message.as_string())
             return
     except Exception as e:
         errors.append(f"SSL-465-default: {e}")
+
+    # Attempt 4: Standard SMTP 587 (let OS choose)
+    try:
+        with smtplib.SMTP(settings.smtp_host, 587, timeout=15) as server:
+            server.starttls()
+            server.login(user, pwd)
+            server.sendmail(from_email, to_email, message.as_string())
+            return
+    except Exception as e:
+        errors.append(f"TLS-587-default: {e}")
 
     raise EmailSendError(" | ".join(errors))
 

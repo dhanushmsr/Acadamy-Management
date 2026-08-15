@@ -106,7 +106,7 @@ def get_dashboard_stats(
             "current_date": datetime.now().isoformat(),
             "total_students": student_count,
             "total_batches": batch_count,
-            "upcoming_batches_today": len(todays_batches),
+            "upcoming_batches_today": len([c for c in todays_classes_data if c.get("is_today")]),
             "total_income": total_income,
             "outstanding_dues": outstanding_dues,
             "academy_name": academy.name if academy else "Academy",

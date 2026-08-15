@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_academy_scope, require_role
@@ -153,10 +153,18 @@ def update_payment_status(
     return _to_out(payment, student.name)
 
 
+def _bg_send_email(to_addr: str, subj: str, html: str):
+    try:
+        send_email(to_email=to_addr, subject=subj, html_body=html)
+    except Exception as e:
+        print(f"[Email Background Error] {e}")
+
+
 @router.post("/{payment_id}/send-email")
 def send_payment_invoice_email(
     payment_id: str,
     target_email: Optional[str] = None,
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.academy_admin, UserRole.coach)),
 ):
@@ -219,12 +227,9 @@ def send_payment_invoice_email(
     else:
         subj = f"Fee Payment Due Reminder #{payment.invoice_number} - {academy.name}"
 
-    try:
-        send_email(
-            to_email=to_addr,
-            subject=subj,
-            html_body=html,
-        )
-        return {"message": f"Invoice email successfully sent to {to_addr}"}
-    except EmailSendError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    if background_tasks:
+        background_tasks.add_task(_bg_send_email, to_addr, subj, html)
+    else:
+        _bg_send_email(to_addr, subj, html)
+
+    return {"message": f"Invoice email queued successfully for {to_addr}"}
