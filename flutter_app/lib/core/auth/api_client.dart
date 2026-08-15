@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 class ApiClient {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'https://acd-man.onrender.com',
   );
 
   String? _token;
@@ -19,23 +19,30 @@ class ApiClient {
       };
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
-    if (res.statusCode != 200) {
-      try {
-        final body = jsonDecode(res.body);
-        if (body is Map && body.containsKey('detail')) {
-          throw Exception(body['detail']);
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+      if (res.statusCode != 200) {
+        try {
+          final body = jsonDecode(res.body);
+          if (body is Map && body.containsKey('detail')) {
+            throw Exception(body['detail']);
+          }
+        } catch (e) {
+          if (e is Exception && !e.toString().contains('FormatException')) rethrow;
         }
-      } catch (e) {
-        if (e is Exception && !e.toString().contains('FormatException')) rethrow;
+        throw Exception('Login failed: ${res.body}');
       }
-      throw Exception('Login failed: ${res.body}');
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      if (e is Exception && (e.toString().contains('SocketException') || e.toString().contains('SocketFailed') || e.toString().contains('ClientException'))) {
+        throw Exception('Cannot connect to server ($baseUrl). Please check internet connection.');
+      }
+      rethrow;
     }
-    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   Future<List<dynamic>> getAcademies() async {

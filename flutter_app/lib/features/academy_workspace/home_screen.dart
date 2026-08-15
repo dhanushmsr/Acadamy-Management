@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (aid == null) return;
 
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image);
+      final result = await FilePicker.platform.pickFiles(type: FileType.image);
       if (result != null && result.files.single.bytes != null) {
         setState(() => _isUploadingLogo = true);
         await context.read<ApiClient>().uploadLogo(
@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logo deleted. Reverted to King Chess coin!')),
+          const SnackBar(content: Text('Logo deleted. Reverted to default app logo!')),
         );
       }
     } catch (e) {
@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (hasLogo)
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Delete Logo (Revert to King Chess Coin)'),
+                title: const Text('Delete Logo (Revert to App Logo)'),
                 onTap: () {
                   Navigator.pop(ctx);
                   _deleteLogo();
@@ -188,26 +188,24 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: size,
       height: size,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFACC15), Color(0xFFEAB308)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, 3),
           )
         ],
       ),
       child: Center(
-        child: Icon(
-          Icons.workspace_premium,
-          color: const Color(0xFF78350F),
-          size: size * 0.6,
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: size * 0.8,
+          height: size * 0.8,
+          fit: BoxFit.contain,
         ),
       ),
     );

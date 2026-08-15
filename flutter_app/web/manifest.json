@@ -1,6 +1,6 @@
 {
-    "name": "actmac",
-    "short_name": "actmac",
+    "name": "AcD-Man",
+    "short_name": "AcD-Man",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

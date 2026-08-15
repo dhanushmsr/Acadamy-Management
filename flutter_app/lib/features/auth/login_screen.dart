@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_state.dart';
 import '../../shared/widgets/app_button.dart';
-import '../../shared/widgets/chess_loading.dart';
 
 /// The one login screen for every role (Super Admin, academy admin,
 /// coach, student, parent) - go_router's redirect sends people to the

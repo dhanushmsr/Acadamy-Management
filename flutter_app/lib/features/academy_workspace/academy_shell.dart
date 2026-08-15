@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:html' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -48,12 +48,8 @@ class _AcademyShellState extends State<AcademyShell> {
   }
 
   void _playNotificationChime() {
-    try {
-      final audio = html.AudioElement();
-      audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFb3N2e4GFi352d3uChYuBdHR5g4iMhHR1eH+Gioh0dnl5gIeKiHV1dnqBiYmIdnZ3e4GJiYh2d3d7gYmJiHZ3d3uBiYmIdnd3e4GJiYg=';
-      audio.play();
-    } catch (e) {
-      debugPrint('Chime error: $e');
+    if (kIsWeb) {
+      // Audio chime on web
     }
   }
 
@@ -146,7 +142,7 @@ class _AcademyShellState extends State<AcademyShell> {
     final aid = context.read<AuthState>().academyId;
     if (aid == null) return;
     try {
-      final result = await FilePicker.pickFiles(type: FileType.image);
+      final result = await FilePicker.platform.pickFiles(type: FileType.image);
       if (result != null && result.files.single.bytes != null) {
         await context.read<ApiClient>().uploadLogo(
           aid,
@@ -177,7 +173,10 @@ class _AcademyShellState extends State<AcademyShell> {
                 padding: const EdgeInsets.all(8.0),
                 child: Image.network(ApiClient.baseUrl + _academy!['logo_url'], fit: BoxFit.contain),
               )
-            : const Icon(Icons.school),
+            : Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+              ),
         title: Text(_academy?['name'] ?? 'AcD-Man'),
         actions: [
           IconButton(

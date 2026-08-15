@@ -365,7 +365,7 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
   bool _isSaving = false;
 
   Future<void> _pickFile(bool isBanner) async {
-    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg']);
+    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg']);
     if (result != null) {
       setState(() {
         if (isBanner) {

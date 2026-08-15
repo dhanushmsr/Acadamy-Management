@@ -1,6 +1,6 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/api_client.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -105,7 +105,7 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
     super.dispose();
   }
 
-  void _sendViaDirectWhatsApp() {
+  void _sendViaDirectWhatsApp() async {
     final text = _bodyController.text.trim();
     if (text.isEmpty || _selectedIds.isEmpty) return;
 
@@ -114,8 +114,10 @@ class _SendMessageScreenState extends State<SendMessageScreen> {
       if ((s.parentPhone ?? '').isNotEmpty) {
         final cleanPhone = s.parentPhone!.replaceAll(RegExp(r'[^0-9+]'), '');
         final formattedPhone = cleanPhone.startsWith('+') ? cleanPhone.substring(1) : cleanPhone;
-        final url = 'https://wa.me/$formattedPhone?text=${Uri.encodeComponent(text)}';
-        html.window.open(url, '_blank');
+        final uri = Uri.parse('https://wa.me/$formattedPhone?text=${Uri.encodeComponent(text)}');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
       }
     }
   }
