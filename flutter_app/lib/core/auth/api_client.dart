@@ -800,8 +800,18 @@ class BatchSummary {
   final String? level;
   final String? startTime;
   final String? endTime;
+  final String? scheduleDays;
+  final int studentCount;
 
-  BatchSummary({required this.id, required this.name, this.level, this.startTime, this.endTime});
+  BatchSummary({
+    required this.id,
+    required this.name,
+    this.level,
+    this.startTime,
+    this.endTime,
+    this.scheduleDays,
+    this.studentCount = 0,
+  });
 
   factory BatchSummary.fromJson(Map<String, dynamic> json) {
     return BatchSummary(
@@ -810,6 +820,8 @@ class BatchSummary {
       level: json['level'] as String?,
       startTime: json['start_time'] as String?,
       endTime: json['end_time'] as String?,
+      scheduleDays: json['schedule_days'] as String?,
+      studentCount: json['student_count'] as int? ?? 0,
     );
   }
 }

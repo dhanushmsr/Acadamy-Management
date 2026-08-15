@@ -566,9 +566,9 @@ class _CalendarDayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHoliday = cday?.isHoliday ?? false;
-    final present = cday?.presentCount ?? 0;
-    final absent = cday?.absentCount ?? 0;
-    final unmarked = cday?.unmarkedCount ?? 0;
+    final present = cday?.studentsPresent ?? 0;
+    final absent = cday?.studentsAbsent ?? 0;
+    final unmarked = cday?.studentsUnmarked ?? 0;
     final hasData = cday != null && (present > 0 || absent > 0 || unmarked > 0);
 
     return InkWell(
