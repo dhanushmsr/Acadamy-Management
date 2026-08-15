@@ -330,19 +330,26 @@ class Tournament(Base):
     academy_id = Column(UUID(as_uuid=False), ForeignKey("academies.id"), nullable=False)
     name = Column(String, nullable=False)
     organizer_name = Column(String, nullable=True)
+    organizer_phone = Column(String, nullable=True)
+    organizer_email = Column(String, nullable=True)
     tournament_type = Column(Enum(TournamentType), default=TournamentType.in_house, nullable=False)
     start_date = Column(DateTime, nullable=True)
     end_date = Column(DateTime, nullable=True)
     reporting_time = Column(DateTime, nullable=True)
     venue = Column(String, nullable=True)
+    city_or_place = Column(String, nullable=True)
     fee_amount = Column(Integer, nullable=True)
     sports = Column(String, default="Chess", nullable=False)
     category = Column(String, default="1 Category", nullable=False)
     status = Column(String, default="open", nullable=False) # open or completed
     result_url = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
+    rules_and_prizes = Column(Text, nullable=True)
     banner_url = Column(String, nullable=True)
     brochure_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    academy = relationship("Academy")
 
 
 class TournamentRegistration(Base):
@@ -350,7 +357,15 @@ class TournamentRegistration(Base):
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     tournament_id = Column(UUID(as_uuid=False), ForeignKey("tournaments.id"), nullable=False)
-    student_id = Column(UUID(as_uuid=False), ForeignKey("students.id"), nullable=False)
+    student_id = Column(UUID(as_uuid=False), ForeignKey("students.id"), nullable=True)
+    participant_name = Column(String, nullable=True)
+    participant_phone = Column(String, nullable=True)
+    participant_email = Column(String, nullable=True)
+    participant_dob = Column(DateTime, nullable=True)
+    payment_status = Column(String, default="paid", nullable=False)
+    razorpay_order_id = Column(String, nullable=True)
+    razorpay_payment_id = Column(String, nullable=True)
+    amount_paid = Column(Integer, default=0, nullable=False)
     registered_at = Column(DateTime, default=datetime.utcnow)
 
 

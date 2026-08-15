@@ -270,3 +270,64 @@ def render_invoice_html(
       </div>
     </div>
     """
+
+
+def render_tournament_invoice_html(
+    academy_name: str,
+    tournament_name: str,
+    participant_name: str,
+    amount: int,
+    payment_id: str,
+    order_id: str,
+    date_str: str,
+    venue: str,
+    reporting_time: str,
+    academy_phone: str = "",
+    academy_email: str = "",
+) -> str:
+    return f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:12px;overflow:hidden;background:#ffffff;">
+      <div style="background:linear-gradient(135deg, #1e293b, #0f172a);color:#ffffff;padding:24px;text-align:center;">
+        <h1 style="margin:0;font-size:22px;letter-spacing:0.5px;">🏆 Tournament Registration Receipt</h1>
+        <p style="margin:6px 0 0 0;font-size:14px;opacity:0.9;">{academy_name}</p>
+      </div>
+
+      <div style="padding:24px;color:#334155;">
+        <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:16px;margin-bottom:20px;">
+          <h2 style="margin:0 0 8px 0;font-size:18px;color:#0f172a;">{tournament_name}</h2>
+          <p style="margin:4px 0;font-size:13px;"><b>Participant:</b> {participant_name}</p>
+          <p style="margin:4px 0;font-size:13px;"><b>Date & Time:</b> {date_str} (Reporting: {reporting_time or 'TBA'})</p>
+          <p style="margin:4px 0;font-size:13px;"><b>Venue:</b> {venue or 'Academy Grounds'}</p>
+        </div>
+
+        <table width="100%" style="border-collapse:collapse;font-size:14px;margin-bottom:20px;">
+          <tr style="background:#f1f5f9;color:#0f172a;font-weight:bold;">
+            <td style="padding:10px;border-radius:6px 0 0 6px;">Description</td>
+            <td style="padding:10px;" align="center">Status</td>
+            <td style="padding:10px;border-radius:0 6px 6px 0;" align="right">Amount Paid</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;">Tournament Entry Fee</td>
+            <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;" align="center">
+              <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:12px;font-weight:bold;font-size:12px;">PAID ✅</span>
+            </td>
+            <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#0f172a;" align="right">₹{amount}</td>
+          </tr>
+        </table>
+
+        <div style="font-size:12px;color:#64748b;line-height:1.6;background:#f8fafc;padding:12px;border-radius:8px;">
+          <div><b>Razorpay Payment ID:</b> {payment_id}</div>
+          <div><b>Order ID:</b> {order_id}</div>
+        </div>
+
+        <div style="margin-top:20px;padding:12px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:4px;font-size:12px;color:#1e40af;">
+          ℹ️ Please present this receipt at the venue reporting desk. Good luck for your matches!
+        </div>
+      </div>
+
+      <div style="background:#0f172a;color:#94a3b8;padding:16px 24px;font-size:12px;text-align:center;">
+        Contact: 📞 {academy_phone or 'N/A'} | ✉️ {academy_email or 'N/A'}<br/>
+        © AcD-Man Academy Management System
+      </div>
+    </div>
+    """

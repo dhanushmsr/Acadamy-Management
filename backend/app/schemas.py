@@ -304,16 +304,20 @@ class ExpenseOut(BaseModel):
 class TournamentCreate(BaseModel):
     name: str
     organizer_name: Optional[str] = None
+    organizer_phone: Optional[str] = None
+    organizer_email: Optional[str] = None
     tournament_type: TournamentType = TournamentType.in_house
     sports: Optional[str] = "Chess"
-    category: Optional[str] = "1 Category"
+    category: Optional[str] = "Open"
     status: Optional[str] = "open"
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     reporting_time: Optional[datetime] = None
     venue: Optional[str] = None
-    fee_amount: Optional[int] = None
+    city_or_place: Optional[str] = None
+    fee_amount: Optional[int] = 0
     notes: Optional[str] = None
+    rules_and_prizes: Optional[str] = None
     result_url: Optional[str] = None
     banner_url: Optional[str] = None
     brochure_url: Optional[str] = None
@@ -326,25 +330,66 @@ class TournamentOut(BaseModel):
     academy_id: str
     name: str
     organizer_name: Optional[str] = None
+    organizer_phone: Optional[str] = None
+    organizer_email: Optional[str] = None
     tournament_type: TournamentType
     sports: str = "Chess"
-    category: str = "1 Category"
+    category: str = "Open"
     status: str = "open"
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     reporting_time: Optional[datetime] = None
     venue: Optional[str] = None
-    fee_amount: Optional[int] = None
+    city_or_place: Optional[str] = None
+    fee_amount: Optional[int] = 0
     notes: Optional[str] = None
+    rules_and_prizes: Optional[str] = None
     result_url: Optional[str] = None
     banner_url: Optional[str] = None
     brochure_url: Optional[str] = None
+    created_at: Optional[datetime] = None
     participant_count: int = 0
     total_collected: int = 0
 
 
+class PublicTournamentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    academy_id: str
+    academy_name: str
+    academy_logo: Optional[str] = None
+    academy_phone: Optional[str] = None
+    academy_email: Optional[str] = None
+    academy_tagline: Optional[str] = None
+    name: str
+    organizer_name: Optional[str] = None
+    organizer_phone: Optional[str] = None
+    organizer_email: Optional[str] = None
+    sports: str = "Chess"
+    category: str = "Open"
+    status: str = "open"
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    reporting_time: Optional[datetime] = None
+    venue: Optional[str] = None
+    city_or_place: Optional[str] = None
+    fee_amount: Optional[int] = 0
+    notes: Optional[str] = None
+    rules_and_prizes: Optional[str] = None
+    result_url: Optional[str] = None
+    banner_url: Optional[str] = None
+    brochure_url: Optional[str] = None
+    is_expired: bool = False
+    participant_count: int = 0
+
+
 class TournamentRegistrationCreate(BaseModel):
-    student_id: str
+    student_id: Optional[str] = None
+    participant_name: str
+    participant_phone: str
+    participant_email: str
+    participant_dob: Optional[datetime] = None
 
 
 class TournamentRegistrationOut(BaseModel):
@@ -352,8 +397,39 @@ class TournamentRegistrationOut(BaseModel):
     
     id: str
     tournament_id: str
-    student_id: str
+    student_id: Optional[str] = None
+    participant_name: Optional[str] = None
+    participant_phone: Optional[str] = None
+    participant_email: Optional[str] = None
+    payment_status: str = "paid"
+    razorpay_order_id: Optional[str] = None
+    razorpay_payment_id: Optional[str] = None
+    amount_paid: int = 0
     registered_at: datetime
+
+
+class RazorpayOrderRequest(BaseModel):
+    participant_name: str
+    participant_phone: str
+    participant_email: str
+    participant_dob: Optional[datetime] = None
+    student_id: Optional[str] = None
+
+
+class RazorpayOrderResponse(BaseModel):
+    order_id: str
+    key_id: str
+    amount: int
+    currency: str = "INR"
+    registration_id: str
+    tournament_name: str
+
+
+class RazorpayVerifyRequest(BaseModel):
+    registration_id: str
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: Optional[str] = None
 
 
 # ---- Materials & Inventory ----
