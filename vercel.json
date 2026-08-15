@@ -1,8 +1,5 @@
 {
-  "version": 2,
-  "buildCommand": "echo 'Static CDN Deployment'",
-  "outputDirectory": "public",
-  "routes": [
-    { "src": "/(.*)", "dest": "/$1" }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
