@@ -247,6 +247,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           style: const TextStyle(fontSize: 13, color: Colors.black87),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       const Icon(Icons.cake_outlined, size: 16, color: Colors.pink),
