@@ -24,8 +24,41 @@ from app.routers import (
     reports,
 )
 
+from sqlalchemy import text
+
 # For local/dev use only. Replace with Alembic migrations before production.
 Base.metadata.create_all(bind=engine)
+
+def _run_auto_migrations():
+    statements = [
+        "ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS organizer_phone VARCHAR;",
+        "ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS organizer_email VARCHAR;",
+        "ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS city_or_place VARCHAR;",
+        "ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS rules_and_prizes TEXT;",
+        "ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "ALTER TABLE tournament_registrations ALTER COLUMN student_id DROP NOT NULL;",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS participant_name VARCHAR;",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS participant_phone VARCHAR;",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS participant_email VARCHAR;",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS participant_dob TIMESTAMP;",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS payment_status VARCHAR DEFAULT 'paid';",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS razorpay_order_id VARCHAR;",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS razorpay_payment_id VARCHAR;",
+        "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS amount_paid INTEGER DEFAULT 0;",
+        "ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    ]
+    try:
+        with engine.connect() as conn:
+            for stmt in statements:
+                try:
+                    conn.execute(text(stmt))
+                    conn.commit()
+                except Exception as ex:
+                    print(f"Migration stmt skipped: {ex}")
+    except Exception as e:
+        print(f"Auto migration failed: {e}")
+
+_run_auto_migrations()
 
 os.makedirs("static/logos", exist_ok=True)
 
