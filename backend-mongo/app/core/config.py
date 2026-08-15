@@ -1,0 +1,29 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    mongodb_url: str = "mongodb://localhost:27017"
+    mongodb_db_name: str = "king_saas"
+
+    secret_key: str = "change-this-to-a-long-random-secret"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+    refresh_token_expire_days: int = 30
+
+    # WhatsApp Cloud API (Meta) - see backend-mongo/README.md for one-time setup
+    whatsapp_access_token: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_api_version: str = "v23.0"
+    whatsapp_template_name: str = "academy_custom_message"
+
+    # SMTP (payment receipt emails) - see backend-mongo/README.md for Gmail App Password setup
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+
+
+settings = Settings()
