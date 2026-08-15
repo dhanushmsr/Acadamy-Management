@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'academy_profile_screen.dart';
 import '../messages/send_message_screen.dart';
 import '../payments/payments_screen.dart';
 import '../tournaments/tournaments_screen.dart';
 import '../materials/materials_screen.dart';
 import '../reports/reports_screen.dart';
 
-/// Replaces the placeholder "More" tab. Send WhatsApp Message is wired
-/// up for real; the rest mirror the sections from the existing King
-/// Chess Academy app and are left as stubs for later phases.
 class MoreMenuScreen extends StatelessWidget {
   const MoreMenuScreen({super.key});
 
@@ -17,6 +15,15 @@ class MoreMenuScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _MoreMenuTile(
+          icon: Icons.account_balance_outlined,
+          title: 'Academy Profile & Password Reset',
+          subtitle: 'View profile, update password, and manage settings',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AcademyProfileScreen()),
+          ),
+        ),
         _MoreMenuTile(
           icon: Icons.message_outlined,
           title: 'Send WhatsApp Message',

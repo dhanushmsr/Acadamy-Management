@@ -236,11 +236,14 @@ def reset_academy_password(
     academy_id: str,
     payload: PasswordResetPayload,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.super_admin)),
+    current_user: User = Depends(require_role(UserRole.super_admin, UserRole.academy_admin)),
 ):
     academy = db.query(Academy).filter(Academy.id == academy_id).first()
     if not academy:
         raise HTTPException(status_code=404, detail="Academy not found")
+
+    if current_user.role == UserRole.academy_admin and current_user.academy_id != academy_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to reset this academy password")
 
     admin_user = (
         db.query(User)
