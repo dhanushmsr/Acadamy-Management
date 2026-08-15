@@ -30,6 +30,12 @@ class _ActmacAppState extends State<ActmacApp> {
   late final GoRouter _router = buildRouter(_authState);
 
   @override
+  void initState() {
+    super.initState();
+    _authState.initSession();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
