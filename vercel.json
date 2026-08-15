@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "bash vercel_build.sh",
   "outputDirectory": "flutter_app/build/web",
   "routes": [
     { "src": "/(.*)", "dest": "/index.html" }
