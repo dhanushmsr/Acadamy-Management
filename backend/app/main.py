@@ -47,16 +47,12 @@ def _run_auto_migrations():
         "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS amount_paid INTEGER DEFAULT 0;",
         "ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
     ]
-    try:
-        with engine.connect() as conn:
-            for stmt in statements:
-                try:
-                    conn.execute(text(stmt))
-                    conn.commit()
-                except Exception as ex:
-                    print(f"Migration stmt skipped: {ex}")
-    except Exception as e:
-        print(f"Auto migration failed: {e}")
+    for stmt in statements:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(stmt))
+        except Exception as ex:
+            print(f"Migration statement skipped: {ex}")
 
 _run_auto_migrations()
 

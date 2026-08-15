@@ -38,8 +38,8 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     }
   }
 
-  void _showNewEventModal() {
-    showModalBottomSheet(
+  void _showNewEventModal() async {
+    final result = await showModalBottomSheet<TournamentSummary>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -47,7 +47,68 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => const _NewEventFormModal(),
-    ).then((_) => _loadTournaments());
+    );
+
+    _loadTournaments();
+
+    if (result != null && mounted) {
+      _showCreatedUrlDialog(context, result.id, result.name);
+    }
+  }
+
+  void _showCreatedUrlDialog(BuildContext context, String tournamentId, String tournamentName) {
+    final publicUrl = 'https://acdmanage.vercel.app/#/tournament/$tournamentId';
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
+            SizedBox(width: 10),
+            Text('Public Link Generated!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Your unique public URL for "$tournamentName" has been generated:'),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: SelectableText(
+                publicUrl,
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B), fontFamily: 'monospace'),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.copy_rounded),
+            label: const Text('Copy Link'),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: publicUrl));
+              Navigator.pop(c);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Public URL copied to clipboard! ✅'), backgroundColor: Colors.green),
+              );
+            },
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E293B), foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showRosterModal(TournamentSummary t) {
@@ -555,8 +616,8 @@ class _NewEventFormModalState extends State<_NewEventFormModal> {
         'status': 'open',
       };
 
-      await context.read<ApiClient>().createTournament(payload);
-      if (mounted) Navigator.pop(context);
+      final created = await context.read<ApiClient>().createTournament(payload);
+      if (mounted) Navigator.pop(context, created);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));

@@ -489,13 +489,14 @@ class ApiClient {
     return list.map((e) => TournamentSummary.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<void> createTournament(Map<String, dynamic> payload) async {
+  Future<TournamentSummary> createTournament(Map<String, dynamic> payload) async {
     final res = await http.post(
       Uri.parse('$baseUrl/tournaments'),
       headers: _headers,
       body: jsonEncode(payload),
     );
     if (res.statusCode != 201) throw Exception('Failed to create tournament: ${res.body}');
+    return TournamentSummary.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
   Future<void> registerForTournament(String tournamentId, String studentId) async {
