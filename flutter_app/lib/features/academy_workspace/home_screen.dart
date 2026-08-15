@@ -576,121 +576,179 @@ class _HomeScreenState extends State<HomeScreen> {
     final dateToday = DateTime.now().toString().split(' ')[0];
     final classes = _stats?.todaysClasses ?? [];
 
-    final colors = [
-      const Color(0xFFD1FAE5), // soft green
-      const Color(0xFFF3E8FF), // soft purple
-      const Color(0xFFFFEDD5), // soft peach
+    // Beautiful gradient color pairs for each batch card
+    final gradientColors = [
+      [const Color(0xFF6DD5FA), const Color(0xFF2980B9)], // Ocean Blue
+      [const Color(0xFFA18CD1), const Color(0xFFFBC2EB)], // Lavender Pink
+      [const Color(0xFF43E97B), const Color(0xFF38F9D7)], // Mint Green
+      [const Color(0xFFF6D365), const Color(0xFFFDA085)], // Sunrise Orange
+      [const Color(0xFFFA709A), const Color(0xFFFEE140)], // Pink Lemonade
+      [const Color(0xFF667EEA), const Color(0xFF764BA2)], // Royal Purple
+      [const Color(0xFF11998E), const Color(0xFF38EF7D)], // Emerald
+      [const Color(0xFFFC5C7D), const Color(0xFF6A82FB)], // Berry Blue
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Text(
-            "Today's Classes",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E2142),
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              const Text(
+                'Your Batches',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E2142),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E2142),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${classes.length}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
         ),
         classes.isEmpty
             ? const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Text('No active classes for today.', style: TextStyle(color: Colors.grey)),
+                child: Text('No batches created yet. Add one from the People tab!',
+                    style: TextStyle(color: Colors.grey)),
               )
             : SizedBox(
-                height: 160,
+                height: 175,
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   scrollDirection: Axis.horizontal,
                   itemCount: classes.length,
                   itemBuilder: (ctx, i) {
                     final c = classes[i] as Map<String, dynamic>;
-                    final cardColor = colors[i % colors.length];
+                    final gc = gradientColors[i % gradientColors.length];
+                    final isToday = c['is_today'] == true;
 
                     return Container(
-                      width: 260,
-                      margin: const EdgeInsets.only(right: 12),
-                      padding: const EdgeInsets.all(16),
+                      width: 270,
+                      margin: const EdgeInsets.only(right: 14),
                       decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(20),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: gc,
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: gc[0].withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
                       child: Stack(
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
+                          Positioned(
+                            right: -15,
+                            top: -15,
+                            child: Opacity(
+                              opacity: 0.15,
+                              child: Icon(Icons.extension, size: 120, color: Colors.white),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        c['category']?.toString() ?? 'Chess',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: gc[1],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    if (isToday)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.circle, size: 6, color: Colors.green),
+                                            SizedBox(width: 4),
+                                            Text('TODAY', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.green)),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                child: Text(
-                                  c['category']?.toString() ?? 'Chess',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFD97706),
-                                  ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  c['name']?.toString() ?? 'Batch',
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                c['name']?.toString() ?? 'Batch',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E2142),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.access_time_rounded, size: 14, color: Colors.white70),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        c['timing']?.toString() ?? 'Timing not set',
+                                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                c['timing']?.toString() ?? 'Timing not available',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                              const Spacer(),
-                              ElevatedButton(
-                                onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => DayAttendanceScreen(
-                                      date: dateToday,
-                                      initialBatchId: c['id']?.toString(),
+                                const Spacer(),
+                                ElevatedButton.icon(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => DayAttendanceScreen(
+                                        date: dateToday,
+                                        initialBatchId: c['id']?.toString(),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2C3550),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                                  icon: const Icon(Icons.check_circle_outline, size: 16),
+                                  label: const Text('Mark Attendance', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: gc[1],
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    elevation: 0,
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: const Text('Attendance', style: TextStyle(fontSize: 12)),
-                              ),
-                            ],
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Row(
-                              children: const [
-                                Icon(Icons.style, size: 36, color: Colors.black54),
-                                SizedBox(width: 2),
-                                Icon(Icons.shield_outlined, size: 32, color: Colors.black38),
                               ],
                             ),
                           ),

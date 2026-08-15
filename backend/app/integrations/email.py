@@ -29,6 +29,28 @@ class EmailSendError(Exception):
     """Raised when the SMTP server rejects or fails to send a message."""
 
 
+def _connect_smtp_ssl_ipv4(host: str, port: int = 465, timeout: int = 20):
+    """Create SMTP_SSL connection forcing IPv4 to avoid Render IPv6 issues."""
+    import socket as _socket
+    addr_info = _socket.getaddrinfo(host, port, _socket.AF_INET)
+    if not addr_info:
+        raise EmailSendError(f"Cannot resolve {host} to IPv4")
+    ipv4_addr = addr_info[0][4][0]
+    return smtplib.SMTP_SSL(ipv4_addr, port, timeout=timeout)
+
+
+def _connect_smtp_tls_ipv4(host: str, port: int = 587, timeout: int = 20):
+    """Create SMTP connection forcing IPv4, then STARTTLS."""
+    import socket as _socket
+    addr_info = _socket.getaddrinfo(host, port, _socket.AF_INET)
+    if not addr_info:
+        raise EmailSendError(f"Cannot resolve {host} to IPv4")
+    ipv4_addr = addr_info[0][4][0]
+    server = smtplib.SMTP(ipv4_addr, port, timeout=timeout)
+    server.starttls()
+    return server
+
+
 def send_email(to_email: str, subject: str, html_body: str) -> None:
     if not settings.smtp_password or not settings.smtp_username:
         raise EmailSendError("SMTP credentials are not configured")
@@ -43,27 +65,39 @@ def send_email(to_email: str, subject: str, html_body: str) -> None:
     message["To"] = to_email
     message.attach(MIMEText(html_body, "html"))
 
-    # Render / cloud PaaS servers often block port 587 or IPv6 TLS connections.
-    # Try SSL on port 465 first, then fall back to TLS on port 587.
+    # Render blocks IPv6 outbound SMTP. Force IPv4 connections.
     errors = []
+
+    # Attempt 1: SSL on port 465 (forced IPv4)
     try:
-        with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=15) as server:
+        server = _connect_smtp_ssl_ipv4(settings.smtp_host, 465)
+        server.login(user, pwd)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+        return
+    except Exception as e:
+        errors.append(f"SSL-465-IPv4: {e}")
+
+    # Attempt 2: STARTTLS on port 587 (forced IPv4)
+    try:
+        server = _connect_smtp_tls_ipv4(settings.smtp_host, settings.smtp_port)
+        server.login(user, pwd)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+        return
+    except Exception as e:
+        errors.append(f"TLS-587-IPv4: {e}")
+
+    # Attempt 3: Standard SMTP_SSL (let OS choose)
+    try:
+        with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=20) as server:
             server.login(user, pwd)
             server.sendmail(from_email, to_email, message.as_string())
             return
     except Exception as e:
-        errors.append(f"SSL 465: {e}")
+        errors.append(f"SSL-465-default: {e}")
 
-    try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
-            server.starttls()
-            server.login(user, pwd)
-            server.sendmail(from_email, to_email, message.as_string())
-            return
-    except Exception as e:
-        errors.append(f"TLS 587: {e}")
-
-    raise EmailSendError(" / ".join(errors))
+    raise EmailSendError(" | ".join(errors))
 
 
 def render_invoice_html(
