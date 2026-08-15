@@ -3,24 +3,31 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import require_academy_scope, require_role
 from app.db import get_db
-from app.models import Parent, Student, User, UserRole
-from app.schemas import StudentCreate, StudentUpdate, StudentOut, StudentUpdate
+from app.models import Parent, Student, User, UserRole, Batch
+from app.schemas import StudentCreate, StudentUpdate, StudentOut
 
 router = APIRouter(prefix="/students", tags=["students"])
 
 
-def _to_out(student: Student) -> StudentOut:
+def _to_out(student: Student, db: Session = None) -> StudentOut:
+    batch_name = None
+    if student.batch_id and db:
+        b = db.query(Batch).filter(Batch.id == student.batch_id).first()
+        batch_name = b.name if b else None
+
     return StudentOut(
         id=student.id,
         student_number=student.student_number,
         name=student.name,
         level=student.level,
         batch_id=student.batch_id,
+        batch_name=batch_name,
         is_active=student.is_active,
         default_fee=student.default_fee,
         parent_name=student.parent.name if student.parent else None,
         parent_phone=student.parent.phone if student.parent else None,
         parent_email=student.parent.email if student.parent else None,
+        parent_address=student.parent.address if student.parent else None,
     )
 
 
@@ -37,7 +44,7 @@ def list_students(
     query = db.query(Student).filter(Student.academy_id == academy_id)
     if not include_inactive:
         query = query.filter(Student.is_active.is_(True))
-    return [_to_out(s) for s in query.order_by(Student.name).all()]
+    return [_to_out(s, db=db) for s in query.order_by(Student.name).all()]
 
 
 @router.post("", response_model=StudentOut, status_code=status.HTTP_201_CREATED)
@@ -46,10 +53,6 @@ def create_student(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.academy_admin, UserRole.coach)),
 ):
-    """If parent_phone matches an existing parent in this academy, the
-    student is linked to them (the 'second child' case seen in the
-    original app's Parents list). Otherwise a new Parent record is
-    created from the parent_* fields."""
     parent = None
     if payload.parent_phone:
         parent = (
@@ -86,7 +89,7 @@ def create_student(
     db.add(student)
     db.commit()
     db.refresh(student)
-    return _to_out(student)
+    return _to_out(student, db=db)
 
 
 @router.patch("/{student_id}", response_model=StudentOut)
@@ -108,7 +111,7 @@ def update_student(
     
     # Handle parent updates
     parent_changes = {}
-    for key in ['parent_name', 'parent_phone', 'parent_email']:
+    for key in ['parent_name', 'parent_phone', 'parent_email', 'parent_address']:
         if key in changes:
             parent_changes[key.replace('parent_', '')] = changes.pop(key)
             
@@ -116,12 +119,12 @@ def update_student(
         for k, v in parent_changes.items():
             setattr(student.parent, k, v)
     elif parent_changes and not student.parent:
-        # Create a new parent if none exists
         parent = Parent(
             academy_id=current_user.academy_id,
             name=parent_changes.get('name', 'Unknown'),
             phone=parent_changes.get('phone', 'Unknown'),
-            email=parent_changes.get('email')
+            email=parent_changes.get('email'),
+            address=parent_changes.get('address'),
         )
         db.add(parent)
         db.flush()
@@ -133,18 +136,16 @@ def update_student(
 
     db.commit()
     db.refresh(student)
-    return _to_out(student)
+    return _to_out(student, db=db)
 
 
 @router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_student(
     student_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.academy_admin)),
+    current_user: User = Depends(require_role(UserRole.academy_admin, UserRole.coach)),
 ):
-    """Soft delete - deactivates rather than removing, so past
-    attendance/payment history stays intact and the student still shows
-    up under 'past students' (include_inactive=true)."""
+    """Soft delete / deactivate student."""
     student = (
         db.query(Student)
         .filter(Student.id == student_id, Student.academy_id == current_user.academy_id)
@@ -153,4 +154,27 @@ def delete_student(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     student.is_active = False
+    db.commit()
+
+
+@router.delete("/{student_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
+def hard_delete_student(
+    student_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.academy_admin, UserRole.coach)),
+):
+    """Permanently delete student record and associated attendance/payment entries."""
+    student = (
+        db.query(Student)
+        .filter(Student.id == student_id, Student.academy_id == current_user.academy_id)
+        .first()
+    )
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    from app.models import Attendance, Payment, TournamentRegistration
+    db.query(Attendance).filter(Attendance.student_id == student_id).delete(synchronize_session=False)
+    db.query(Payment).filter(Payment.student_id == student_id).delete(synchronize_session=False)
+    db.query(TournamentRegistration).filter(TournamentRegistration.student_id == student_id).delete(synchronize_session=False)
+    db.delete(student)
     db.commit()

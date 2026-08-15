@@ -99,9 +99,9 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Enter a new password for the academy admin account:',
-                style: TextStyle(fontSize: 13, color: Colors.black70),
+                style: TextStyle(fontSize: 13, color: Colors.black54),
               ),
               const SizedBox(height: 12),
               TextField(

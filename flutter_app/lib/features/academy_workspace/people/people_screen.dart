@@ -132,18 +132,41 @@ class _StudentsList extends StatelessWidget {
                   itemCount: students.length,
                   itemBuilder: (context, index) {
                     final s = students[index];
+                    final subtitleParts = <String>[];
+                    if (s.parentName != null && s.parentName!.isNotEmpty) subtitleParts.add(s.parentName!);
+                    if (s.parentPhone != null && s.parentPhone!.isNotEmpty) subtitleParts.add(s.parentPhone!);
+                    if (s.parentAddress != null && s.parentAddress!.isNotEmpty) subtitleParts.add('📍 ${s.parentAddress}');
+
                     return ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                      title: Text(s.name),
-                      subtitle: Text(s.parentPhone ?? 'No parent phone on file'),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => StudentProfileScreen(studentId: s.id, studentName: s.name),
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.indigo.shade50,
+                        child: Text(
+                          s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
                         ),
                       ),
+                      title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                        subtitleParts.isEmpty ? 'No parent details' : subtitleParts.join(' • '),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                      ),
+                      onTap: () async {
+                        final res = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => StudentProfileScreen(
+                              studentId: s.id,
+                              studentName: s.name,
+                              studentDetails: s,
+                            ),
+                          ),
+                        );
+                        if (res == true) {
+                          onRefresh();
+                        }
+                      },
                       trailing: IconButton(
-                        icon: const Icon(Icons.edit, size: 20),
+                        icon: const Icon(Icons.edit, size: 20, color: Colors.indigo),
                         onPressed: () async {
                           final updated = await Navigator.push<bool>(
                             context,

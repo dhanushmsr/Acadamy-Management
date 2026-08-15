@@ -20,6 +20,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
   final _parentNameController = TextEditingController();
   final _parentPhoneController = TextEditingController();
   final _parentEmailController = TextEditingController();
+  final _parentAddressController = TextEditingController();
   final _defaultFeeController = TextEditingController();
   String? _selectedBatchId;
   String? _selectedLevel;
@@ -37,6 +38,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
       _parentNameController.text = s.parentName ?? '';
       _parentPhoneController.text = s.parentPhone ?? '';
       _parentEmailController.text = s.parentEmail ?? '';
+      _parentAddressController.text = s.parentAddress ?? '';
       if (s.defaultFee != null) {
         _defaultFeeController.text = s.defaultFee.toString();
       }
@@ -64,6 +66,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           parentName: _parentNameController.text.trim().isEmpty ? null : _parentNameController.text.trim(),
           parentPhone: _parentPhoneController.text.trim().isEmpty ? null : _parentPhoneController.text.trim(),
           parentEmail: _parentEmailController.text.trim().isEmpty ? null : _parentEmailController.text.trim(),
+          parentAddress: _parentAddressController.text.trim().isEmpty ? null : _parentAddressController.text.trim(),
         );
       } else {
         // Edit
@@ -75,6 +78,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           'parent_name': _parentNameController.text.trim().isEmpty ? null : _parentNameController.text.trim(),
           'parent_phone': _parentPhoneController.text.trim().isEmpty ? null : _parentPhoneController.text.trim(),
           'parent_email': _parentEmailController.text.trim().isEmpty ? null : _parentEmailController.text.trim(),
+          'parent_address': _parentAddressController.text.trim().isEmpty ? null : _parentAddressController.text.trim(),
         });
       }
       
@@ -92,6 +96,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
     _parentNameController.dispose();
     _parentPhoneController.dispose();
     _parentEmailController.dispose();
+    _parentAddressController.dispose();
     _defaultFeeController.dispose();
     super.dispose();
   }
@@ -108,12 +113,12 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(labelText: 'Student Name'),
+            decoration: const InputDecoration(labelText: 'Student Name *', prefixIcon: Icon(Icons.person)),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedBatchId,
-            decoration: const InputDecoration(labelText: 'Batch'),
+            initialValue: _selectedBatchId,
+            decoration: const InputDecoration(labelText: 'Batch', prefixIcon: Icon(Icons.class_)),
             items: widget.batches
                 .map((b) => DropdownMenuItem(value: b.id, child: Text(b.name)))
                 .toList(),
@@ -121,8 +126,8 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedLevel,
-            decoration: const InputDecoration(labelText: 'Level (Optional)'),
+            initialValue: _selectedLevel,
+            decoration: const InputDecoration(labelText: 'Level (Optional)', prefixIcon: Icon(Icons.star)),
             items: ['Beginner', 'Intermediate', 'Advanced']
                 .map((l) => DropdownMenuItem(value: l, child: Text(l)))
                 .toList(),
@@ -133,22 +138,23 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
             controller: _defaultFeeController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Default Fee Amount (₹)',
+              labelText: 'Default Monthly Fee (₹)',
+              prefixIcon: Icon(Icons.currency_rupee),
               helperText: 'Will be used as default when adding fees',
             ),
           ),
           const SizedBox(height: 24),
-          const Text('Parent Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text('Parent & Address Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           TextField(
             controller: _parentNameController,
-            decoration: const InputDecoration(labelText: 'Parent Name'),
+            decoration: const InputDecoration(labelText: 'Parent Name', prefixIcon: Icon(Icons.family_restroom)),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _parentPhoneController,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'Parent Phone (+91...)'),
+            decoration: const InputDecoration(labelText: 'Parent Phone (+91...)', prefixIcon: Icon(Icons.phone)),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -156,7 +162,17 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
               labelText: 'Parent Email',
+              prefixIcon: Icon(Icons.email),
               helperText: 'Used to send payment receipts',
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _parentAddressController,
+            decoration: const InputDecoration(
+              labelText: 'Place / Address',
+              prefixIcon: Icon(Icons.location_on),
+              helperText: 'City, area or full address',
             ),
           ),
           if (_error != null) ...[
@@ -165,7 +181,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           ],
           const SizedBox(height: 24),
           AppButton(
-            label: _saving ? 'Saving...' : 'Save',
+            label: _saving ? 'Saving...' : (isEdit ? 'Update Student' : 'Save Student'),
             onPressed: _saving ? null : _save,
           ),
         ],

@@ -144,11 +144,13 @@ class StudentOut(BaseModel):
     name: str
     level: Optional[str] = None
     batch_id: Optional[str] = None
+    batch_name: Optional[str] = None
     is_active: bool = True
     default_fee: Optional[int] = None
     parent_name: Optional[str] = None
     parent_phone: Optional[str] = None
     parent_email: Optional[str] = None
+    parent_address: Optional[str] = None
 
 
 # ---- Batches ----

@@ -77,6 +77,7 @@ class ApiClient {
     String? parentName,
     String? parentPhone,
     String? parentEmail,
+    String? parentAddress,
     int? defaultFee,
   }) async {
     final res = await http.post(
@@ -89,6 +90,7 @@ class ApiClient {
         'parent_name': parentName,
         'parent_phone': parentPhone,
         'parent_email': parentEmail,
+        'parent_address': parentAddress,
         'default_fee': defaultFee,
       }),
     );
@@ -106,6 +108,16 @@ class ApiClient {
     if (res.statusCode != 200) {
       throw Exception('Failed to update student: ${res.body}');
     }
+  }
+
+  Future<void> deleteStudent(String id) async {
+    final res = await http.delete(Uri.parse('$baseUrl/students/$id'), headers: _headers);
+    if (res.statusCode != 204) throw Exception('Failed to delete student: ${res.body}');
+  }
+
+  Future<void> hardDeleteStudent(String id) async {
+    final res = await http.delete(Uri.parse('$baseUrl/students/$id/permanent'), headers: _headers);
+    if (res.statusCode != 204) throw Exception('Failed to permanently delete student: ${res.body}');
   }
 
   Future<List<BatchSummary>> getBatches() async {
@@ -648,20 +660,24 @@ class StudentSummary {
   final String name;
   final String? level;
   final String? batchId;
+  final String? batchName;
   final int? defaultFee;
   final String? parentName;
   final String? parentPhone;
   final String? parentEmail;
+  final String? parentAddress;
 
   StudentSummary({
     required this.id,
     required this.name,
     this.level,
     this.batchId,
+    this.batchName,
     this.defaultFee,
     this.parentName,
     this.parentPhone,
     this.parentEmail,
+    this.parentAddress,
   });
 
   factory StudentSummary.fromJson(Map<String, dynamic> json) {
@@ -670,10 +686,12 @@ class StudentSummary {
       name: json['name'] as String,
       level: json['level'] as String?,
       batchId: json['batch_id'] as String?,
+      batchName: json['batch_name'] as String?,
       defaultFee: json['default_fee'] as int?,
       parentName: json['parent_name'] as String?,
       parentPhone: json['parent_phone'] as String?,
       parentEmail: json['parent_email'] as String?,
+      parentAddress: json['parent_address'] as String?,
     );
   }
 }

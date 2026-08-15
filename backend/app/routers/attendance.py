@@ -344,8 +344,23 @@ def get_student_attendance(
         else []
     )
     present = sum(1 for m in marks if m.status == AttendanceStatus.present)
-    absent = sum(1 for m in marks if m.status == AttendanceStatus.absent)
+    marked_absent = sum(1 for m in marks if m.status == AttendanceStatus.absent)
+
+    now = datetime.utcnow()
+    # Find total sessions scheduled up to now for this student's batch
+    total_class_sessions = 0
+    if student.batch_id:
+        total_class_sessions = db.query(ClassSession).filter(
+            ClassSession.batch_id == student.batch_id,
+            ClassSession.scheduled_at >= month_start,
+            ClassSession.scheduled_at < month_end,
+            ClassSession.scheduled_at <= now,
+        ).count()
+
+    # Unmarked days automatically count as absent
+    total_expected = max(len(session_ids), total_class_sessions)
+    effective_absent = max(marked_absent, total_expected - present)
 
     return StudentAttendanceSummaryOut(
-        year=year, month=month, days_present=present, days_absent=absent, total_marked=present + absent
+        year=year, month=month, days_present=present, days_absent=effective_absent, total_marked=total_expected
     )
