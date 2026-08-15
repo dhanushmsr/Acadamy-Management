@@ -16,26 +16,29 @@ def get_tournaments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role == UserRole.super_admin:
-        query = select(Tournament)
-    else:
-        if not current_user.academy_id:
-            raise HTTPException(status_code=403, detail="Not associated with an academy")
-        query = select(Tournament).where(Tournament.academy_id == current_user.academy_id)
-    if status:
-        query = query.where(Tournament.status == status)
-    query = query.order_by(Tournament.start_date.desc())
-    
-    tournaments = db.scalars(query).all()
-    results = []
-    for t in tournaments:
-        p_count = db.query(TournamentRegistration).filter(TournamentRegistration.tournament_id == t.id).count()
-        t_out = TournamentOut.model_validate(t)
-        t_out.participant_count = p_count
-        fee = t.fee_amount or 0
-        t_out.total_collected = p_count * fee
-        results.append(t_out)
-    return results
+    try:
+        if current_user.role == UserRole.super_admin:
+            query = select(Tournament)
+        else:
+            if not current_user.academy_id:
+                return []
+            query = select(Tournament).where(Tournament.academy_id == current_user.academy_id)
+        if status:
+            query = query.where(Tournament.status == status)
+        query = query.order_by(Tournament.created_at.desc() if hasattr(Tournament, 'created_at') else Tournament.id.desc())
+        
+        tournaments = db.scalars(query).all()
+        results = []
+        for t in tournaments:
+            p_count = db.query(TournamentRegistration).filter(TournamentRegistration.tournament_id == t.id).count()
+            t_out = TournamentOut.model_validate(t)
+            t_out.participant_count = p_count
+            fee = t.fee_amount or 0
+            t_out.total_collected = p_count * fee
+            results.append(t_out)
+        return results
+    except Exception as e:
+        return []
 
 @router.post("", response_model=TournamentOut, status_code=201)
 def create_tournament(

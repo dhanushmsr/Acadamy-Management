@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/api_client.dart';
 import '../../../shared/widgets/chess_loading.dart';
 import 'new_payment_screen.dart';
 
-/// Fee monitoring, not a payment processor - there's no gateway
-/// anywhere in this screen. The manager records what a fee is and sets
-/// its status (unpaid/partial/paid) based on what actually happened
-/// outside the app (cash, bank transfer, etc). Marking something fully
-/// "paid" is what triggers the receipt email.
 class PaymentsScreen extends StatefulWidget {
   const PaymentsScreen({super.key});
 
@@ -43,7 +39,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Could not load fees';
+        _error = 'Could not load fees: $e';
         _loading = false;
       });
     }
@@ -66,7 +62,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
       if (status == 'paid' && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Marked paid — receipt emailed if the parent has an email on file'),
+            content: Text('Marked paid — receipt emailed if parent email exists!'),
           ),
         );
       }
@@ -84,12 +80,12 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     return showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Amount paid so far (of Rs. ${p.amount})'),
+        title: Text('Amount paid so far (of ₹${p.amount})'),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           autofocus: true,
-          decoration: const InputDecoration(prefixText: 'Rs. '),
+          decoration: const InputDecoration(prefixText: '₹ '),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
@@ -120,13 +116,112 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Invoice email sent directly for ${p.studentName ?? "student"}!'),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        // If email is missing, offer a dialog to type email
+        _promptEmailAndSend(p);
+      }
+    }
+  }
+
+  void _promptEmailAndSend(PaymentSummary p) {
+    final emailCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.email, color: Colors.indigo),
+            SizedBox(width: 8),
+            Text('Send Fee Receipt / Invoice', style: TextStyle(fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Enter recipient email address for ${p.studentName ?? "student"}:'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Parent / Student Email',
+                prefixIcon: Icon(Icons.alternate_email),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+            icon: const Icon(Icons.send, size: 16),
+            label: const Text('Send Email'),
+            onPressed: () async {
+              final targetEmail = emailCtrl.text.trim();
+              if (targetEmail.isEmpty || !targetEmail.contains('@')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid email address')),
+                );
+                return;
+              }
+              Navigator.pop(c);
+              try {
+                await _api.sendPaymentEmail(p.id, targetEmail: targetEmail);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Receipt emailed successfully to $targetEmail!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (err) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to send email: $err'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendWhatsAppReminder(PaymentSummary p) async {
+    StudentSummary? sMatch;
+    for (final s in _students) {
+      if (s.id == p.studentId || (p.studentName != null && s.name.toLowerCase() == p.studentName!.toLowerCase())) {
+        sMatch = s;
+        break;
+      }
+    }
+
+    final phone = sMatch?.parentPhone ?? '';
+    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+    final msg = Uri.encodeComponent(
+      'Hello, reminder from Academy regarding fee payment of ₹${p.amount} for ${p.studentName ?? "student"}. Status: ${p.status.toUpperCase()}. Thank you!',
+    );
+
+    final String waUrl = cleanPhone.isNotEmpty
+        ? 'https://wa.me/$cleanPhone?text=$msg'
+        : 'https://wa.me/?text=$msg';
+
+    final Uri uri = Uri.parse(waUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send email: $e')),
+          const SnackBar(content: Text('Could not open WhatsApp app')),
         );
       }
     }
@@ -135,54 +230,70 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Fees')),
+      appBar: AppBar(title: const Text('Fees & Payments')),
       body: _loading
           ? const ChessLoadingScreen(message: 'Loading fees...')
           : _error != null
-              ? Center(child: Text(_error!))
+              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
               : _payments.isEmpty
                   ? const Center(child: Text('No fees recorded yet — tap + to add one'))
                   : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       itemCount: _payments.length,
                       itemBuilder: (context, index) {
                         final p = _payments[index];
-                        return ListTile(
-                          title: Text(p.studentName ?? 'Unknown student'),
-                          subtitle: Text(
-                            p.status == 'partial'
-                                ? 'Rs. ${p.amountPaid} of Rs. ${p.amount} paid · ${p.planType}'
-                                : 'Rs. ${p.amount} · ${p.planType}',
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.email_outlined, color: Color(0xFF1E2142)),
-                                tooltip: 'Send Invoice Email',
-                                onPressed: () => _sendInvoiceEmail(p),
-                              ),
-                              const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: _statusColor(p.status).withOpacity(0.4)),
-                                  borderRadius: BorderRadius.circular(20),
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            title: Text(
+                              p.studentName ?? 'Unknown student',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            subtitle: Text(
+                              p.status == 'partial'
+                                  ? '₹${p.amountPaid} of ₹${p.amount} paid • ${p.planType}'
+                                  : '₹${p.amount} • ${p.planType}',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.message_outlined, color: Colors.green),
+                                  tooltip: 'Send WhatsApp Reminder',
+                                  onPressed: () => _sendWhatsAppReminder(p),
                                 ),
-                                child: DropdownButton<String>(
-                                  value: p.status,
-                                  underline: const SizedBox.shrink(),
-                                  style: TextStyle(color: _statusColor(p.status), fontSize: 13),
-                                  items: const [
-                                    DropdownMenuItem(value: 'unpaid', child: Text('Unpaid')),
-                                    DropdownMenuItem(value: 'partial', child: Text('Partial')),
-                                    DropdownMenuItem(value: 'paid', child: Text('Paid')),
-                                  ],
-                                  onChanged: (v) {
-                                    if (v != null) _changeStatus(p, v);
-                                  },
+                                IconButton(
+                                  icon: const Icon(Icons.email_outlined, color: Colors.indigo),
+                                  tooltip: 'Send Email Receipt',
+                                  onPressed: () => _sendInvoiceEmail(p),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: _statusColor(p.status).withValues(alpha: 0.5)),
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: _statusColor(p.status).withValues(alpha: 0.1),
+                                  ),
+                                  child: DropdownButton<String>(
+                                    value: p.status,
+                                    underline: const SizedBox.shrink(),
+                                    style: TextStyle(color: _statusColor(p.status), fontWeight: FontWeight.bold, fontSize: 13),
+                                    items: const [
+                                      DropdownMenuItem(value: 'unpaid', child: Text('Unpaid')),
+                                      DropdownMenuItem(value: 'partial', child: Text('Partial')),
+                                      DropdownMenuItem(value: 'paid', child: Text('Paid')),
+                                    ],
+                                    onChanged: (v) {
+                                      if (v != null) _changeStatus(p, v);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
