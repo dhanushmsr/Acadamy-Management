@@ -816,29 +816,35 @@ class BatchSummary {
 
 class PaymentSummary {
   final String id;
+  final String? studentId;
   final String? studentName;
   final String planType;
   final int amount;
   final int amountPaid;
   final String status; // unpaid / partial / paid
+  final String? dueDate;
 
   PaymentSummary({
     required this.id,
+    this.studentId,
     this.studentName,
     required this.planType,
     required this.amount,
     required this.amountPaid,
     required this.status,
+    this.dueDate,
   });
 
   factory PaymentSummary.fromJson(Map<String, dynamic> json) {
     return PaymentSummary(
       id: json['id'] as String,
+      studentId: json['student_id'] as String?,
       studentName: json['student_name'] as String?,
       planType: json['plan_type'] as String,
       amount: json['amount'] as int,
-      amountPaid: json['amount_paid'] as int,
+      amountPaid: json['amount_paid'] as int? ?? 0,
       status: json['status'] as String,
+      dueDate: json['due_date'] as String?,
     );
   }
 }

@@ -505,6 +505,7 @@ class _DayAttendanceScreenState extends State<DayAttendanceScreen> {
           );
         },
       ),
-    );
+    ),
+  );
   }
 }
