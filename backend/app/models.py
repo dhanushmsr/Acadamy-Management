@@ -383,6 +383,7 @@ class Payment(Base):
     status = Column(Enum(PaymentStatus), default=PaymentStatus.unpaid, nullable=False)
     due_date = Column(DateTime, nullable=True)
     paid_at = Column(DateTime, nullable=True)  # set the moment status first reaches "paid"
+    created_at = Column(DateTime, default=datetime.utcnow)
     invoice_number = Column(String, nullable=True)
 
 

@@ -228,8 +228,11 @@ def send_payment_invoice_email(
         subj = f"Fee Payment Due Reminder #{payment.invoice_number} - {academy.name}"
 
     if background_tasks:
-        background_tasks.add_task(_bg_send_email, to_addr, subj, html)
+        background_tasks.add_task(send_email, to_addr, subj, html)
     else:
-        _bg_send_email(to_addr, subj, html)
+        try:
+            send_email(to_addr, subj, html)
+        except Exception as err:
+            logger.warning(f"Failed to send payment email: {err}")
 
     return {"message": f"Invoice email queued successfully for {to_addr}"}

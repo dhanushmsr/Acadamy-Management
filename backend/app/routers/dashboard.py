@@ -106,11 +106,12 @@ def get_dashboard_stats(
         expenses = db.query(Expense).filter(Expense.academy_id == academy_id).all()
         for p in all_payments[:5]:
             p_plan = getattr(p.plan_type, 'value', str(p.plan_type or 'Fee'))
+            p_dt = getattr(p, 'created_at', None) or getattr(p, 'paid_at', None) or getattr(p, 'due_date', None)
             tx_list.append({
                 "title": f"Subscription ({p_plan.capitalize()})",
-                "month": _safe_date_fmt(p.created_at, "%b %Y", "Aug 2026"),
+                "month": _safe_date_fmt(p_dt, "%b %Y", "Aug 2026"),
                 "amount": f"₹{p.amount_paid or 0}",
-                "date": _safe_date_fmt(p.created_at, "%d %b %Y", "08 Aug 2026"),
+                "date": _safe_date_fmt(p_dt, "%d %b %Y", "08 Aug 2026"),
                 "is_income": True,
             })
 

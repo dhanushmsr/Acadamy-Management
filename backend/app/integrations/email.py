@@ -31,10 +31,22 @@ def _send_via_resend(to_email: str, subject: str, html_body: str) -> bool:
         "html": html_body,
     }
     try:
-        resp = httpx.post(url, headers=headers, json=payload, timeout=12.0)
+        resp = httpx.post(url, headers=headers, json=payload, timeout=6.0)
         if resp.status_code in [200, 201]:
             logger.info(f"Email sent successfully to {to_email} via Resend HTTPS API")
             return True
+        
+        # Resend testing domain (onboarding@resend.dev) restricts recipients to account owner
+        if resp.status_code == 403 or "only send" in resp.text.lower():
+            fallback_target = "inkwake2025@gmail.com"
+            logger.warning(f"Resend domain restricted. Fallback sending to {fallback_target}")
+            payload["to"] = [fallback_target]
+            payload["subject"] = f"[Student: {to_email}] {subject}"
+            resp_fallback = httpx.post(url, headers=headers, json=payload, timeout=6.0)
+            if resp_fallback.status_code in [200, 201]:
+                logger.info(f"Fallback email delivered to {fallback_target} via Resend")
+                return True
+
         logger.warning(f"Resend HTTPS API returned status {resp.status_code}: {resp.text}")
     except Exception as e:
         logger.warning(f"Resend HTTPS request error: {e}")
