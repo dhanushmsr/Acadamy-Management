@@ -59,6 +59,11 @@ app.include_router(dashboard.router)
 app.include_router(expenses.router)
 
 
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "AcD-Man API is running"}
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
