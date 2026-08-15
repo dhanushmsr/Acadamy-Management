@@ -7,7 +7,8 @@ import 'student_profile_screen.dart';
 
 class DayAttendanceScreen extends StatefulWidget {
   final String date; // "YYYY-MM-DD"
-  const DayAttendanceScreen({super.key, required this.date});
+  final String? initialBatchId;
+  const DayAttendanceScreen({super.key, required this.date, this.initialBatchId});
 
   @override
   State<DayAttendanceScreen> createState() => _DayAttendanceScreenState();
@@ -39,8 +40,12 @@ class _DayAttendanceScreenState extends State<DayAttendanceScreen> {
         _data = data;
         _batchList = batches;
         _loading = false;
-        if (_data!.batches.isNotEmpty && _selectedBatchId == null) {
-          _selectedBatchId = _data!.batches.first.batchId;
+        if (_selectedBatchId == null) {
+          if (widget.initialBatchId != null && _data!.batches.any((b) => b.batchId == widget.initialBatchId)) {
+            _selectedBatchId = widget.initialBatchId;
+          } else if (_data!.batches.isNotEmpty) {
+            _selectedBatchId = _data!.batches.first.batchId;
+          }
         }
       });
     } catch (e) {

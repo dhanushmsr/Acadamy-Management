@@ -51,7 +51,7 @@ def get_dashboard_stats(
     ).all()
     
     total_income = sum([p.amount_paid for p in all_payments if p.status in [PaymentStatus.paid, PaymentStatus.partial]])
-    outstanding_dues = sum([(p.amount - p.amount_paid) for p in all_payments if p.status in [PaymentStatus.pending, PaymentStatus.partial, PaymentStatus.overdue]])
+    outstanding_dues = sum([(p.amount - p.amount_paid) for p in all_payments if p.status in [PaymentStatus.unpaid, PaymentStatus.partial]])
 
     # 5. Recent Transactions (Payments + Expenses combined)
     expenses = db.query(Expense).filter(Expense.academy_id == academy_id).all()
