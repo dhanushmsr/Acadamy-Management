@@ -184,7 +184,8 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
     final adminNameCtrl = TextEditingController();
     final adminEmailCtrl = TextEditingController();
     final adminPasswordCtrl = TextEditingController();
-    String category = 'any';
+    final customCategoryCtrl = TextEditingController();
+    String category = 'chess';
 
     Uint8List? selectedLogoBytes;
     String? selectedLogoName;
@@ -259,17 +260,29 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
                   TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Academy Name *', prefixIcon: Icon(Icons.business))),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: category,
+                    initialValue: category,
                     decoration: const InputDecoration(labelText: 'Category', prefixIcon: Icon(Icons.category)),
                     items: const [
                       DropdownMenuItem(value: 'chess', child: Text('Chess')),
-                      DropdownMenuItem(value: 'other', child: Text('Other')),
-                      DropdownMenuItem(value: 'any', child: Text('Any')),
+                      DropdownMenuItem(value: 'cricket', child: Text('Cricket')),
+                      DropdownMenuItem(value: 'music', child: Text('Music')),
+                      DropdownMenuItem(value: 'other', child: Text('Other (Custom Category)')),
                     ],
                     onChanged: (val) {
                       if (val != null) setStateDialog(() => category = val);
                     },
                   ),
+                  if (category == 'other') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: customCategoryCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Custom Category Name *',
+                        hintText: 'Type category (e.g. Dance, Karate, Swimming...)',
+                        prefixIcon: Icon(Icons.edit_note),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Address', prefixIcon: Icon(Icons.location_on))),
                   const SizedBox(height: 12),
@@ -319,12 +332,16 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
                                   return;
                                 }
 
+                                final finalCategory = (category == 'other' && customCategoryCtrl.text.trim().isNotEmpty)
+                                    ? customCategoryCtrl.text.trim()
+                                    : (category == 'other' ? 'Other' : (category[0].toUpperCase() + category.substring(1)));
+
                                 setStateDialog(() => isCreating = true);
                                 try {
                                   final api = context.read<ApiClient>();
                                   final created = await api.createAcademy({
                                     'name': name,
-                                    'category': category,
+                                    'category': finalCategory,
                                     'address': addressCtrl.text.trim(),
                                     'phone': phoneCtrl.text.trim(),
                                     'email': emailCtrl.text.trim(),
@@ -388,10 +405,15 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
     final phoneCtrl = TextEditingController(text: academy['phone']);
     final emailCtrl = TextEditingController(text: academy['email']);
     final taglineCtrl = TextEditingController(text: academy['tagline'] ?? '');
-    String category = academy['category'] ?? 'any';
-    
-    if (!['chess', 'other', 'any'].contains(category)) {
-      category = 'any';
+    final customCategoryCtrl = TextEditingController();
+
+    String rawCat = (academy['category'] ?? 'chess').toString();
+    String category = 'other';
+    if (['chess', 'cricket', 'music'].contains(rawCat.toLowerCase())) {
+      category = rawCat.toLowerCase();
+    } else {
+      category = 'other';
+      customCategoryCtrl.text = rawCat;
     }
 
     showDialog(
@@ -405,21 +427,38 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Academy Name')),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: category,
-                  decoration: const InputDecoration(labelText: 'Category'),
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: 'Category', prefixIcon: Icon(Icons.category)),
                   items: const [
                     DropdownMenuItem(value: 'chess', child: Text('Chess')),
-                    DropdownMenuItem(value: 'other', child: Text('Other')),
-                    DropdownMenuItem(value: 'any', child: Text('Any')),
+                    DropdownMenuItem(value: 'cricket', child: Text('Cricket')),
+                    DropdownMenuItem(value: 'music', child: Text('Music')),
+                    DropdownMenuItem(value: 'other', child: Text('Other (Custom Category)')),
                   ],
                   onChanged: (val) {
                     if (val != null) setStateDialog(() => category = val);
                   },
                 ),
+                if (category == 'other') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: customCategoryCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Custom Category Name *',
+                      hintText: 'Type category (e.g. Dance, Karate, Swimming...)',
+                      prefixIcon: Icon(Icons.edit_note),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
                 TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Address')),
+                const SizedBox(height: 12),
                 TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone')),
+                const SizedBox(height: 12),
                 TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+                const SizedBox(height: 12),
                 TextField(controller: taglineCtrl, decoration: const InputDecoration(labelText: 'Tagline')),
               ],
             ),
@@ -428,10 +467,14 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
             TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
+                final finalCategory = (category == 'other' && customCategoryCtrl.text.trim().isNotEmpty)
+                    ? customCategoryCtrl.text.trim()
+                    : (category == 'other' ? 'Other' : (category[0].toUpperCase() + category.substring(1)));
+
                 try {
                   await context.read<ApiClient>().updateAcademy(academy['id'], {
                     'name': nameCtrl.text.trim(),
-                    'category': category,
+                    'category': finalCategory,
                     'address': addressCtrl.text.trim(),
                     'phone': phoneCtrl.text.trim(),
                     'email': emailCtrl.text.trim(),
@@ -513,6 +556,27 @@ class _AcademiesScreenState extends State<AcademiesScreen> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                   color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.indigo.shade200),
+                              ),
+                              child: Text(
+                                (ac['category'] != null && ac['category'].toString().isNotEmpty)
+                                    ? (ac['category'].toString().length > 1
+                                        ? ac['category'].toString()[0].toUpperCase() + ac['category'].toString().substring(1)
+                                        : ac['category'].toString().toUpperCase())
+                                    : 'Chess',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo.shade800,
                                 ),
                               ),
                             ),
