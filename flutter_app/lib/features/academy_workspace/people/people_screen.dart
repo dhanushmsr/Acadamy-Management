@@ -165,22 +165,63 @@ class _StudentsList extends StatelessWidget {
                           onRefresh();
                         }
                       },
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit, size: 20, color: Colors.indigo),
-                        onPressed: () async {
-                          final updated = await Navigator.push<bool>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => NewStudentScreen(
-                                batches: batches,
-                                studentToEdit: s,
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (val) async {
+                          if (val == 'edit') {
+                            final updated = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => NewStudentScreen(
+                                  batches: batches,
+                                  studentToEdit: s,
+                                ),
                               ),
-                            ),
-                          );
-                          if (updated == true) {
+                            );
+                            if (updated == true) {
+                              onRefresh();
+                            }
+                          } else if (val == 'delete_soft') {
+                            final api = context.read<ApiClient>();
+                            await api.deleteStudent(s.id);
+                            onRefresh();
+                          } else if (val == 'delete_hard') {
+                            final api = context.read<ApiClient>();
+                            await api.hardDeleteStudent(s.id);
                             onRefresh();
                           }
                         },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, size: 18, color: Colors.indigo),
+                                SizedBox(width: 8),
+                                Text('Edit Student'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete_soft',
+                            child: Row(
+                              children: [
+                                Icon(Icons.person_off, size: 18, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Text('Deactivate (Soft Delete)'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete_hard',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_forever, size: 18, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Purge (Permanent Delete)', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },

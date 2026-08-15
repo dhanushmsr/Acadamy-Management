@@ -134,6 +134,7 @@ class StudentUpdate(BaseModel):
     parent_name: Optional[str] = None
     parent_phone: Optional[str] = None
     parent_email: Optional[str] = None
+    parent_address: Optional[str] = None
 
 
 class StudentOut(BaseModel):

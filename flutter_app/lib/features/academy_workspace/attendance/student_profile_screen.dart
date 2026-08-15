@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../core/auth/api_client.dart';
 import '../../../shared/widgets/chess_loading.dart';
 
+import '../people/new_student_screen.dart';
+
 class StudentProfileScreen extends StatefulWidget {
   final String studentId;
   final String studentName;
@@ -142,12 +144,41 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     }
   }
 
+  Future<void> _editStudent() async {
+    try {
+      final batches = await _api.getBatches();
+      if (mounted && _student != null) {
+        final updated = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => NewStudentScreen(
+              batches: batches,
+              studentToEdit: _student,
+            ),
+          ),
+        );
+        if (updated == true) {
+          _load();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not load batches for edit: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.studentName),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.indigo),
+            tooltip: 'Edit Student Details',
+            onPressed: _editStudent,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
             tooltip: 'Delete Student',
