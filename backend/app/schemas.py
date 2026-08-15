@@ -127,6 +127,7 @@ class StudentCreate(BaseModel):
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
+    date_of_birth: Optional[datetime] = None
     level: Optional[str] = None
     batch_id: Optional[str] = None
     is_active: Optional[bool] = None
@@ -143,6 +144,7 @@ class StudentOut(BaseModel):
     id: str
     student_number: Optional[int] = None
     name: str
+    date_of_birth: Optional[datetime] = None
     level: Optional[str] = None
     batch_id: Optional[str] = None
     batch_name: Optional[str] = None

@@ -133,6 +133,9 @@ class _StudentsList extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final s = students[index];
                     final subtitleParts = <String>[];
+                    if (s.dateOfBirth != null && s.dateOfBirth!.isNotEmpty) {
+                      subtitleParts.add('🎂 ${s.formattedDobAndAge}');
+                    }
                     if (s.parentName != null && s.parentName!.isNotEmpty) subtitleParts.add(s.parentName!);
                     if (s.parentPhone != null && s.parentPhone!.isNotEmpty) subtitleParts.add(s.parentPhone!);
                     if (s.parentAddress != null && s.parentAddress!.isNotEmpty) subtitleParts.add('📍 ${s.parentAddress}');

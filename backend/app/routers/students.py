@@ -19,6 +19,7 @@ def _to_out(student: Student, db: Session = None) -> StudentOut:
         id=student.id,
         student_number=student.student_number,
         name=student.name,
+        date_of_birth=student.date_of_birth,
         level=student.level,
         batch_id=student.batch_id,
         batch_name=batch_name,

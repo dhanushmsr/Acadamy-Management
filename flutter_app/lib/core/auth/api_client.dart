@@ -72,6 +72,7 @@ class ApiClient {
 
   Future<void> createStudent({
     required String name,
+    String? dateOfBirth,
     String? batchId,
     String? level,
     String? parentName,
@@ -85,6 +86,7 @@ class ApiClient {
       headers: _headers,
       body: jsonEncode({
         'name': name,
+        'date_of_birth': dateOfBirth,
         'batch_id': batchId,
         'level': level,
         'parent_name': parentName,
@@ -658,6 +660,7 @@ class ReportSummaryData {
 class StudentSummary {
   final String id;
   final String name;
+  final String? dateOfBirth;
   final String? level;
   final String? batchId;
   final String? batchName;
@@ -670,6 +673,7 @@ class StudentSummary {
   StudentSummary({
     required this.id,
     required this.name,
+    this.dateOfBirth,
     this.level,
     this.batchId,
     this.batchName,
@@ -680,10 +684,39 @@ class StudentSummary {
     this.parentAddress,
   });
 
+  int? get age {
+    if (dateOfBirth == null || dateOfBirth!.isEmpty) return null;
+    try {
+      final dob = DateTime.parse(dateOfBirth!);
+      final today = DateTime.now();
+      int yrs = today.year - dob.year;
+      if (today.month < dob.month || (today.month == dob.month && today.day < dob.day)) {
+        yrs--;
+      }
+      return yrs >= 0 ? yrs : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String get formattedDobAndAge {
+    if (dateOfBirth == null || dateOfBirth!.isEmpty) return 'DOB: Not set';
+    try {
+      final dob = DateTime.parse(dateOfBirth!);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final formatted = '${dob.day.toString().padLeft(2, '0')} ${months[dob.month - 1]} ${dob.year}';
+      final calcAge = age;
+      return calcAge != null ? '$formatted ($calcAge yrs)' : formatted;
+    } catch (_) {
+      return 'DOB: $dateOfBirth';
+    }
+  }
+
   factory StudentSummary.fromJson(Map<String, dynamic> json) {
     return StudentSummary(
       id: json['id'] as String,
       name: json['name'] as String,
+      dateOfBirth: json['date_of_birth'] as String?,
       level: json['level'] as String?,
       batchId: json['batch_id'] as String?,
       batchName: json['batch_name'] as String?,

@@ -24,6 +24,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
   final _defaultFeeController = TextEditingController();
   String? _selectedBatchId;
   String? _selectedLevel;
+  DateTime? _dob;
   bool _saving = false;
   String? _error;
 
@@ -31,7 +32,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
   void initState() {
     super.initState();
     _api = context.read<ApiClient>();
-    
+
     if (widget.studentToEdit != null) {
       final s = widget.studentToEdit!;
       _nameController.text = s.name;
@@ -44,6 +45,45 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
       }
       _selectedBatchId = s.batchId;
       _selectedLevel = s.level;
+      if (s.dateOfBirth != null && s.dateOfBirth!.isNotEmpty) {
+        try {
+          _dob = DateTime.parse(s.dateOfBirth!);
+        } catch (_) {}
+      }
+    }
+  }
+
+  int? get _calculatedAge {
+    if (_dob == null) return null;
+    final today = DateTime.now();
+    int yrs = today.year - _dob!.year;
+    if (today.month < _dob!.month || (today.month == _dob!.month && today.day < _dob!.day)) {
+      yrs--;
+    }
+    return yrs >= 0 ? yrs : null;
+  }
+
+  Future<void> _pickDob() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dob ?? DateTime(2015, 1, 1),
+      firstDate: DateTime(1980),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1E2142),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E2142),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _dob = picked);
     }
   }
 
@@ -55,11 +95,13 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
     });
     try {
       final defaultFee = int.tryParse(_defaultFeeController.text.trim());
+      final dobStr = _dob != null ? _dob!.toIso8601String() : null;
 
       if (widget.studentToEdit == null) {
         // Create
         await _api.createStudent(
           name: _nameController.text.trim(),
+          dateOfBirth: dobStr,
           batchId: _selectedBatchId,
           level: _selectedLevel,
           defaultFee: defaultFee,
@@ -72,6 +114,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
         // Edit
         await _api.updateStudent(widget.studentToEdit!.id, {
           'name': _nameController.text.trim(),
+          'date_of_birth': dobStr,
           'batch_id': _selectedBatchId,
           'level': _selectedLevel,
           'default_fee': defaultFee,
@@ -81,7 +124,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           'parent_address': _parentAddressController.text.trim().isEmpty ? null : _parentAddressController.text.trim(),
         });
       }
-      
+
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       setState(() => _error = 'Failed to save: $e');
@@ -104,6 +147,12 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.studentToEdit != null;
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dobText = _dob != null
+        ? '${_dob!.day.toString().padLeft(2, '0')} ${months[_dob!.month - 1]} ${_dob!.year}'
+        : 'Select Date of Birth';
+    final age = _calculatedAge;
+
     return Scaffold(
       appBar: AppBar(title: Text(isEdit ? 'Edit Student' : 'New Student')),
       body: ListView(
@@ -114,6 +163,56 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Student Name *', prefixIcon: Icon(Icons.person)),
+          ),
+          const SizedBox(height: 16),
+          // Date of Birth & Live Age Selector
+          InkWell(
+            onTap: _pickDob,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.cake, color: Color(0xFF1E2142)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Date of Birth (DOB)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        const SizedBox(height: 2),
+                        Text(
+                          dobText,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: _dob != null ? const Color(0xFF1E2142) : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (age != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E2142),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Age: $age yrs',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
