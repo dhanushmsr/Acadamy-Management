@@ -1,7 +1,8 @@
 {
   "version": 2,
-  "outputDirectory": "flutter_app/build/web",
+  "buildCommand": "echo 'Static CDN Deployment'",
+  "outputDirectory": "public",
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
