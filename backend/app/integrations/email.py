@@ -31,7 +31,7 @@ class EmailSendError(Exception):
 
 def send_email(to_email: str, subject: str, html_body: str) -> None:
     if not settings.smtp_password or not settings.smtp_username:
-        raise EmailSendError("SMTP credentials are not fully configured on Render")
+        raise EmailSendError("SMTP credentials are not configured")
 
     pwd = settings.smtp_password.replace(" ", "").strip()
     user = settings.smtp_username.strip()
@@ -43,13 +43,27 @@ def send_email(to_email: str, subject: str, html_body: str) -> None:
     message["To"] = to_email
     message.attach(MIMEText(html_body, "html"))
 
+    # Render / cloud PaaS servers often block port 587 or IPv6 TLS connections.
+    # Try SSL on port 465 first, then fall back to TLS on port 587.
+    errors = []
+    try:
+        with smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=15) as server:
+            server.login(user, pwd)
+            server.sendmail(from_email, to_email, message.as_string())
+            return
+    except Exception as e:
+        errors.append(f"SSL 465: {e}")
+
     try:
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as server:
             server.starttls()
             server.login(user, pwd)
             server.sendmail(from_email, to_email, message.as_string())
+            return
     except Exception as e:
-        raise EmailSendError(str(e))
+        errors.append(f"TLS 587: {e}")
+
+    raise EmailSendError(" / ".join(errors))
 
 
 def render_invoice_html(

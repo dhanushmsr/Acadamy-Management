@@ -110,90 +110,35 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   }
 
   Future<void> _sendInvoiceEmail(PaymentSummary p) async {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sending invoice email for ${p.studentName ?? "student"}...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
     try {
       await _api.sendPaymentEmail(p.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Invoice email sent directly for ${p.studentName ?? "student"}!'),
+            content: Text('Invoice email sent to ${p.studentName ?? "student"}\'s email!'),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        // If email is missing, offer a dialog to type email
-        _promptEmailAndSend(p);
+        final msg = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to send email: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
-  }
-
-  void _promptEmailAndSend(PaymentSummary p) {
-    final emailCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (c) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.email, color: Colors.indigo),
-            SizedBox(width: 8),
-            Text('Send Fee Receipt / Invoice', style: TextStyle(fontSize: 16)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Enter recipient email address for ${p.studentName ?? "student"}:'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Parent / Student Email',
-                prefixIcon: Icon(Icons.alternate_email),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-            icon: const Icon(Icons.send, size: 16),
-            label: const Text('Send Email'),
-            onPressed: () async {
-              final targetEmail = emailCtrl.text.trim();
-              if (targetEmail.isEmpty || !targetEmail.contains('@')) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please enter a valid email address')),
-                );
-                return;
-              }
-              Navigator.pop(c);
-              try {
-                await _api.sendPaymentEmail(p.id, targetEmail: targetEmail);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Receipt emailed successfully to $targetEmail!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (err) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to send email: $err'), backgroundColor: Colors.red),
-                  );
-                }
-              }
-            },
-          ),
-        ],
-      ),
-    );
   }
 
   void _sendWhatsAppReminder(PaymentSummary p) async {
