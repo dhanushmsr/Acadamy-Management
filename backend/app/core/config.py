@@ -21,7 +21,9 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str = "inkwake2025@gmail.com"
     smtp_password: str = ""
-    smtp_from_email: str = "inkwake2025@gmail.com"
+    # HTTPS Email APIs (Render friendly - port 443)
+    resend_api_key: str = ""
+    brevo_api_key: str = ""
 
 
 settings = Settings()

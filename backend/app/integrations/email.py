@@ -4,22 +4,88 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Optional
 
+import httpx
+
 from app.core.config import settings
 
 logger = logging.getLogger("email_sender")
 
 
 class EmailSendError(Exception):
-    """Raised when the SMTP server rejects or fails to send a message."""
+    """Raised when the email provider fails to deliver a message."""
+
+
+def _send_via_resend(to_email: str, subject: str, html_body: str) -> bool:
+    api_key = (getattr(settings, "resend_api_key", "") or "").strip()
+    if not api_key:
+        return False
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "from": "Academy Workspace <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": subject,
+        "html": html_body,
+    }
+    try:
+        resp = httpx.post(url, headers=headers, json=payload, timeout=12.0)
+        if resp.status_code in [200, 201]:
+            logger.info(f"Email sent successfully to {to_email} via Resend HTTPS API")
+            return True
+        logger.warning(f"Resend HTTPS API returned status {resp.status_code}: {resp.text}")
+    except Exception as e:
+        logger.warning(f"Resend HTTPS request error: {e}")
+    return False
+
+
+def _send_via_brevo(to_email: str, subject: str, html_body: str) -> bool:
+    api_key = (getattr(settings, "brevo_api_key", "") or "").strip()
+    if not api_key:
+        return False
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "api-key": api_key,
+        "Content-Type": "application/json",
+        "accept": "application/json",
+    }
+    from_addr = (getattr(settings, "smtp_from_email", "") or getattr(settings, "smtp_username", "") or "inkwake2025@gmail.com").strip()
+    payload = {
+        "sender": {"name": "Academy Workspace", "email": from_addr},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_body,
+    }
+    try:
+        resp = httpx.post(url, headers=headers, json=payload, timeout=12.0)
+        if resp.status_code in [200, 201]:
+            logger.info(f"Email sent successfully to {to_email} via Brevo HTTPS API")
+            return True
+        logger.warning(f"Brevo HTTPS API returned status {resp.status_code}: {resp.text}")
+    except Exception as e:
+        logger.warning(f"Brevo HTTPS request error: {e}")
+    return False
 
 
 def send_email(to_email: str, subject: str, html_body: str) -> None:
+    # 1. Try HTTPS APIs (Render Friendly - Port 443)
+    if _send_via_resend(to_email, subject, html_body):
+        return
+
+    if _send_via_brevo(to_email, subject, html_body):
+        return
+
+    # 2. Try SMTP fallback
     if not settings.smtp_password or not settings.smtp_username:
-        raise EmailSendError("SMTP credentials are not configured")
+        raise EmailSendError(
+            "Render blocks outbound SMTP ports 25/465/587. Please add RESEND_API_KEY or BREVO_API_KEY to Render Environment Variables!"
+        )
 
     pwd = settings.smtp_password.replace(" ", "").strip()
     user = settings.smtp_username.strip()
-    from_email = (settings.smtp_from_email or user).strip()
+    from_email = (getattr(settings, "smtp_from_email", "") or user).strip()
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -29,35 +95,37 @@ def send_email(to_email: str, subject: str, html_body: str) -> None:
 
     errors = []
 
-    # Strategy 1: Standard TLS on Port 587 with explicit EHLO
+    # Strategy A: TLS 587
     try:
-        server = smtplib.SMTP(settings.smtp_host, 587, timeout=12)
+        server = smtplib.SMTP(settings.smtp_host, 587, timeout=10)
         server.ehlo()
         server.starttls()
         server.ehlo()
         server.login(user, pwd)
         server.sendmail(from_email, [to_email], msg.as_string())
         server.quit()
-        logger.info(f"Email sent successfully to {to_email} via TLS 587")
+        logger.info(f"Email sent to {to_email} via SMTP TLS 587")
         return
     except Exception as e:
-        logger.warning(f"SMTP TLS 587 attempt failed: {e}")
+        logger.warning(f"SMTP TLS 587 error: {e}")
         errors.append(f"TLS-587: {e}")
 
-    # Strategy 2: SSL on Port 465 with explicit EHLO
+    # Strategy B: SSL 465
     try:
-        server = smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=12)
+        server = smtplib.SMTP_SSL(settings.smtp_host, 465, timeout=10)
         server.ehlo()
         server.login(user, pwd)
         server.sendmail(from_email, [to_email], msg.as_string())
         server.quit()
-        logger.info(f"Email sent successfully to {to_email} via SSL 465")
+        logger.info(f"Email sent to {to_email} via SMTP SSL 465")
         return
     except Exception as e:
-        logger.warning(f"SMTP SSL 465 attempt failed: {e}")
+        logger.warning(f"SMTP SSL 465 error: {e}")
         errors.append(f"SSL-465: {e}")
 
-    raise EmailSendError(" | ".join(errors))
+    raise EmailSendError(
+        "Render blocks raw SMTP outbound ports. Add RESEND_API_KEY or BREVO_API_KEY on Render for instant HTTPS delivery. Details: " + " | ".join(errors)
+    )
 
 
 def render_invoice_html(
