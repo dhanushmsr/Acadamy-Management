@@ -75,6 +75,7 @@ class ApiClient {
     String? dateOfBirth,
     String? batchId,
     String? level,
+    String? gender = 'male',
     String? parentName,
     String? parentPhone,
     String? parentEmail,
@@ -89,6 +90,7 @@ class ApiClient {
         'date_of_birth': dateOfBirth,
         'batch_id': batchId,
         'level': level,
+        'gender': gender ?? 'male',
         'parent_name': parentName,
         'parent_phone': parentPhone,
         'parent_email': parentEmail,
@@ -724,6 +726,7 @@ class StudentSummary {
   final String name;
   final String? dateOfBirth;
   final String? level;
+  final String? gender;
   final String? batchId;
   final String? batchName;
   final int? defaultFee;
@@ -737,6 +740,7 @@ class StudentSummary {
     required this.name,
     this.dateOfBirth,
     this.level,
+    this.gender,
     this.batchId,
     this.batchName,
     this.defaultFee,
@@ -745,6 +749,20 @@ class StudentSummary {
     this.parentEmail,
     this.parentAddress,
   });
+
+  String get genderEmoji {
+    final g = (gender ?? 'male').toLowerCase();
+    if (g == 'female') return '👧';
+    if (g == 'other') return '🧑';
+    return '👦';
+  }
+
+  String get genderDisplay {
+    final g = (gender ?? 'male').toLowerCase();
+    if (g == 'female') return '👧 Female';
+    if (g == 'other') return '🧑 Other';
+    return '👦 Male';
+  }
 
   int? get age {
     if (dateOfBirth == null || dateOfBirth!.isEmpty) return null;
@@ -780,6 +798,7 @@ class StudentSummary {
       name: json['name'] as String,
       dateOfBirth: json['date_of_birth'] as String?,
       level: json['level'] as String?,
+      gender: json['gender'] as String? ?? 'male',
       batchId: json['batch_id'] as String?,
       batchName: json['batch_name'] as String?,
       defaultFee: json['default_fee'] as int?,

@@ -133,6 +133,7 @@ class _StudentsList extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final s = students[index];
                     final subtitleParts = <String>[];
+                    subtitleParts.add(s.genderDisplay);
                     if (s.dateOfBirth != null && s.dateOfBirth!.isNotEmpty) {
                       subtitleParts.add('🎂 ${s.formattedDobAndAge}');
                     }
@@ -144,11 +145,18 @@ class _StudentsList extends StatelessWidget {
                       leading: CircleAvatar(
                         backgroundColor: Colors.indigo.shade50,
                         child: Text(
-                          s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+                          '${s.genderEmoji} ${s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S'}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ),
-                      title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                          Text(s.genderEmoji, style: const TextStyle(fontSize: 16)),
+                        ],
+                      ),
                       subtitle: Text(
                         subtitleParts.isEmpty ? 'No parent details' : subtitleParts.join(' • '),
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade700),

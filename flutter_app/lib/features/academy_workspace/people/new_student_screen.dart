@@ -24,6 +24,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
   final _defaultFeeController = TextEditingController();
   String? _selectedBatchId;
   String? _selectedLevel;
+  String _gender = 'male';
   DateTime? _dob;
   bool _saving = false;
   String? _error;
@@ -45,6 +46,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
       }
       _selectedBatchId = s.batchId;
       _selectedLevel = s.level;
+      _gender = s.gender ?? 'male';
       if (s.dateOfBirth != null && s.dateOfBirth!.isNotEmpty) {
         try {
           _dob = DateTime.parse(s.dateOfBirth!);
@@ -104,6 +106,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           dateOfBirth: dobStr,
           batchId: _selectedBatchId,
           level: _selectedLevel,
+          gender: _gender,
           defaultFee: defaultFee,
           parentName: _parentNameController.text.trim().isEmpty ? null : _parentNameController.text.trim(),
           parentPhone: _parentPhoneController.text.trim().isEmpty ? null : _parentPhoneController.text.trim(),
@@ -117,6 +120,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           'date_of_birth': dobStr,
           'batch_id': _selectedBatchId,
           'level': _selectedLevel,
+          'gender': _gender,
           'default_fee': defaultFee,
           'parent_name': _parentNameController.text.trim().isEmpty ? null : _parentNameController.text.trim(),
           'parent_phone': _parentPhoneController.text.trim().isEmpty ? null : _parentPhoneController.text.trim(),
@@ -163,6 +167,57 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Student Name *', prefixIcon: Icon(Icons.person)),
+          ),
+          const SizedBox(height: 16),
+          // Gender Selector with Emojis
+          const Text('Gender *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => _gender = 'male'),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _gender == 'male' ? const Color(0xFF1E2142) : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _gender == 'male' ? const Color(0xFF1E2142) : Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('👦 ', style: TextStyle(fontSize: 18)),
+                        Text('Male', style: TextStyle(fontWeight: FontWeight.bold, color: _gender == 'male' ? Colors.white : Colors.black87)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => _gender = 'female'),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _gender == 'female' ? const Color(0xFF1E2142) : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _gender == 'female' ? const Color(0xFF1E2142) : Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('👧 ', style: TextStyle(fontSize: 18)),
+                        Text('Female', style: TextStyle(fontWeight: FontWeight.bold, color: _gender == 'female' ? Colors.white : Colors.black87)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           // Date of Birth & Live Age Selector
