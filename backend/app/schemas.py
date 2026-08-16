@@ -115,6 +115,7 @@ class StudentCreate(BaseModel):
     name: str
     date_of_birth: Optional[datetime] = None
     level: Optional[str] = None
+    gender: Optional[str] = "male"
     batch_id: Optional[str] = None
     default_fee: Optional[int] = None
     # Either links to an existing parent by phone, or creates a new one
@@ -129,6 +130,7 @@ class StudentUpdate(BaseModel):
     name: Optional[str] = None
     date_of_birth: Optional[datetime] = None
     level: Optional[str] = None
+    gender: Optional[str] = None
     batch_id: Optional[str] = None
     is_active: Optional[bool] = None
     default_fee: Optional[int] = None
@@ -146,6 +148,7 @@ class StudentOut(BaseModel):
     name: str
     date_of_birth: Optional[datetime] = None
     level: Optional[str] = None
+    gender: Optional[str] = "male"
     batch_id: Optional[str] = None
     batch_name: Optional[str] = None
     is_active: bool = True

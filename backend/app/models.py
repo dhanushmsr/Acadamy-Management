@@ -112,6 +112,7 @@ class Student(Base):
     current_rating = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     default_fee = Column(Integer, nullable=True)
+    gender = Column(String, default="male", nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     parent = relationship("Parent", back_populates="students")

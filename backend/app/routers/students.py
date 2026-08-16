@@ -85,6 +85,7 @@ def create_student(
         name=payload.name,
         date_of_birth=payload.date_of_birth,
         level=payload.level,
+        gender=payload.gender or "male",
         default_fee=payload.default_fee,
     )
     db.add(student)
