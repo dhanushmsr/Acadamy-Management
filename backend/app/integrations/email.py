@@ -92,11 +92,12 @@ def _send_via_brevo(to_email: str, subject: str, html_body: str) -> bool:
 
 
 def send_email(to_email: str, subject: str, html_body: str) -> None:
-    # 1. Try HTTPS APIs (Render Friendly - Port 443)
-    if _send_via_resend(to_email, subject, html_body):
+    # 1. Try Brevo HTTPS API first if available (Sends to ANY dynamic parent/student email address!)
+    if _send_via_brevo(to_email, subject, html_body):
         return
 
-    if _send_via_brevo(to_email, subject, html_body):
+    # 2. Try Resend HTTPS API
+    if _send_via_resend(to_email, subject, html_body):
         return
 
     # 2. Try SMTP fallback
