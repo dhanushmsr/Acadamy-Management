@@ -169,7 +169,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
             decoration: const InputDecoration(labelText: 'Student Name *', prefixIcon: Icon(Icons.person)),
           ),
           const SizedBox(height: 16),
-          // Gender Selector with Emojis
+          // Gender Selector with Professional Vector Icons & Distinct Colors
           const Text('Gender *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
           const SizedBox(height: 8),
           Row(
@@ -178,18 +178,33 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
                 child: InkWell(
                   onTap: () => setState(() => _gender = 'male'),
                   borderRadius: BorderRadius.circular(12),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: _gender == 'male' ? const Color(0xFF1E2142) : Colors.grey.shade100,
+                      color: _gender == 'male' ? const Color(0xFFEFF6FF) : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _gender == 'male' ? const Color(0xFF1E2142) : Colors.grey.shade300),
+                      border: Border.all(
+                        color: _gender == 'male' ? const Color(0xFF2563EB) : Colors.grey.shade300,
+                        width: _gender == 'male' ? 2 : 1,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('👦 ', style: TextStyle(fontSize: 18)),
-                        Text('Male', style: TextStyle(fontWeight: FontWeight.bold, color: _gender == 'male' ? Colors.white : Colors.black87)),
+                        Icon(
+                          Icons.male_rounded,
+                          size: 22,
+                          color: _gender == 'male' ? const Color(0xFF2563EB) : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Male',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _gender == 'male' ? const Color(0xFF1E40AF) : Colors.grey.shade700,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -200,18 +215,33 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
                 child: InkWell(
                   onTap: () => setState(() => _gender = 'female'),
                   borderRadius: BorderRadius.circular(12),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: _gender == 'female' ? const Color(0xFF1E2142) : Colors.grey.shade100,
+                      color: _gender == 'female' ? const Color(0xFFFDF2F8) : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _gender == 'female' ? const Color(0xFF1E2142) : Colors.grey.shade300),
+                      border: Border.all(
+                        color: _gender == 'female' ? const Color(0xFFDB2777) : Colors.grey.shade300,
+                        width: _gender == 'female' ? 2 : 1,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('👧 ', style: TextStyle(fontSize: 18)),
-                        Text('Female', style: TextStyle(fontWeight: FontWeight.bold, color: _gender == 'female' ? Colors.white : Colors.black87)),
+                        Icon(
+                          Icons.female_rounded,
+                          size: 22,
+                          color: _gender == 'female' ? const Color(0xFFDB2777) : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Female',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _gender == 'female' ? const Color(0xFF9D174D) : Colors.grey.shade700,
+                          ),
+                        ),
                       ],
                     ),
                   ),

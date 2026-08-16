@@ -133,9 +133,8 @@ class _StudentsList extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final s = students[index];
                     final subtitleParts = <String>[];
-                    subtitleParts.add(s.genderDisplay);
                     if (s.dateOfBirth != null && s.dateOfBirth!.isNotEmpty) {
-                      subtitleParts.add('🎂 ${s.formattedDobAndAge}');
+                      subtitleParts.add(s.formattedDobAndAge);
                     }
                     if (s.parentName != null && s.parentName!.isNotEmpty) subtitleParts.add(s.parentName!);
                     if (s.parentPhone != null && s.parentPhone!.isNotEmpty) subtitleParts.add(s.parentPhone!);
@@ -143,18 +142,33 @@ class _StudentsList extends StatelessWidget {
 
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.indigo.shade50,
-                        child: Text(
-                          '${s.genderEmoji} ${s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S'}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
+                        backgroundColor: s.genderBgColor,
+                        child: Icon(s.genderIcon, color: s.genderColor, size: 22),
                       ),
                       title: Row(
                         children: [
                           Expanded(
                             child: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
-                          Text(s.genderEmoji, style: const TextStyle(fontSize: 16)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: s.genderBgColor,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: s.genderColor.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(s.genderIcon, size: 14, color: s.genderColor),
+                                const SizedBox(width: 3),
+                                Text(
+                                  s.genderLabel,
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: s.genderColor),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                       subtitle: Text(

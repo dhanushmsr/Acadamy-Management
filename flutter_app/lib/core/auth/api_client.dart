@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 /// Thin wrapper around the FastAPI backend. Point [baseUrl] at your
@@ -750,19 +751,11 @@ class StudentSummary {
     this.parentAddress,
   });
 
-  String get genderEmoji {
-    final g = (gender ?? 'male').toLowerCase();
-    if (g == 'female') return '👧';
-    if (g == 'other') return '🧑';
-    return '👦';
-  }
-
-  String get genderDisplay {
-    final g = (gender ?? 'male').toLowerCase();
-    if (g == 'female') return '👧 Female';
-    if (g == 'other') return '🧑 Other';
-    return '👦 Male';
-  }
+  bool get isFemale => (gender ?? 'male').toLowerCase() == 'female';
+  Color get genderColor => isFemale ? const Color(0xFFDB2777) : const Color(0xFF2563EB);
+  Color get genderBgColor => isFemale ? const Color(0xFFFDF2F8) : const Color(0xFFEFF6FF);
+  IconData get genderIcon => isFemale ? Icons.female_rounded : Icons.male_rounded;
+  String get genderLabel => isFemale ? 'Female' : 'Male';
 
   int? get age {
     if (dateOfBirth == null || dateOfBirth!.isEmpty) return null;

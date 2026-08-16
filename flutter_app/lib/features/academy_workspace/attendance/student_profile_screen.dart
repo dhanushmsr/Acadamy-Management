@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/auth/api_client.dart';
+import '../../../core/auth/auth_state.dart';
 import '../../../shared/widgets/chess_loading.dart';
 
 import '../people/new_student_screen.dart';
@@ -189,7 +190,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       body: _loading
           ? const ChessLoadingScreen()
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+              ? _buildErrorView()
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
@@ -208,9 +209,71 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     );
   }
 
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.amber),
+                const SizedBox(height: 12),
+                const Text(
+                  'Connection Warning',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _error ?? 'Unable to connect to server.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        onPressed: _load,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E293B), foregroundColor: Colors.white),
+                        icon: const Icon(Icons.logout, size: 18),
+                        label: const Text('Reset Session'),
+                        onPressed: () async {
+                          await context.read<AuthState>().logout();
+                          if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeaderCard() {
     final batchText = _student?.batchName ?? 'No Batch Assigned';
     final level = _student?.level ?? 'Standard';
+    final isFemale = _student?.isFemale ?? false;
+    final avatarColor = isFemale ? const Color(0xFFDB2777) : const Color(0xFF2563EB);
+    final badgeBg = _student?.genderBgColor ?? const Color(0xFFEFF6FF);
+    final badgeColor = _student?.genderColor ?? const Color(0xFF2563EB);
+    final badgeIcon = _student?.genderIcon ?? Icons.male_rounded;
+    final badgeLabel = _student?.genderLabel ?? 'Male';
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -221,10 +284,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           children: [
             CircleAvatar(
               radius: 32,
-              backgroundColor: const Color(0xFF1E293B),
+              backgroundColor: avatarColor,
               child: Text(
                 widget.studentName.isNotEmpty ? widget.studentName[0].toUpperCase() : 'S',
-                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: 16),
@@ -243,13 +306,20 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: badgeBg,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(color: badgeColor.withOpacity(0.3)),
                         ),
-                        child: Text(
-                          _student?.genderDisplay ?? '👦 Male',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(badgeIcon, size: 16, color: badgeColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              badgeLabel,
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: badgeColor),
+                            ),
+                          ],
                         ),
                       ),
                     ],
