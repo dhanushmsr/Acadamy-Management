@@ -21,6 +21,7 @@ def _to_out(student: Student, db: Session = None) -> StudentOut:
         name=student.name,
         date_of_birth=student.date_of_birth,
         level=student.level,
+        gender=student.gender or "male",
         batch_id=student.batch_id,
         batch_name=batch_name,
         is_active=student.is_active,
