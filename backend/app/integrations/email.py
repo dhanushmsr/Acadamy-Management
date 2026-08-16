@@ -15,6 +15,8 @@ class EmailSendError(Exception):
     """Raised when the email provider fails to deliver a message."""
 
 
+import re
+
 def _send_via_resend(to_email: str, subject: str, html_body: str) -> bool:
     api_key = (getattr(settings, "resend_api_key", "") or "").strip()
     if not api_key:
@@ -23,6 +25,7 @@ def _send_via_resend(to_email: str, subject: str, html_body: str) -> bool:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     }
     payload = {
         "from": "Academy Workspace <onboarding@resend.dev>",
@@ -31,21 +34,27 @@ def _send_via_resend(to_email: str, subject: str, html_body: str) -> bool:
         "html": html_body,
     }
     try:
-        resp = httpx.post(url, headers=headers, json=payload, timeout=6.0)
+        resp = httpx.post(url, headers=headers, json=payload, timeout=10.0)
         if resp.status_code in [200, 201]:
             logger.info(f"Email sent successfully to {to_email} via Resend HTTPS API")
             return True
         
-        # Resend testing domain (onboarding@resend.dev) restricts recipients to account owner
-        if resp.status_code == 403 or "only send" in resp.text.lower():
-            fallback_target = "inkwake2025@gmail.com"
-            logger.warning(f"Resend domain restricted. Fallback sending to {fallback_target}")
+        # Resend testing domain (onboarding@resend.dev) restricts recipients to account owner email
+        resp_text = resp.text.lower()
+        if "only send testing emails" in resp_text or ("403" in str(resp.status_code) and "resend" in resp_text):
+            # Extract owner email from Resend error message if present e.g. (user@gmail.com)
+            owner_match = re.search(r'\(([^)]+@[^)]+)\)', resp.text)
+            fallback_target = owner_match.group(1).strip() if owner_match else "inkwake2025@gmail.com"
+            
+            logger.warning(f"Resend domain restricted to owner. Fallback sending to {fallback_target}")
             payload["to"] = [fallback_target]
             payload["subject"] = f"[Student: {to_email}] {subject}"
-            resp_fallback = httpx.post(url, headers=headers, json=payload, timeout=6.0)
+            resp_fallback = httpx.post(url, headers=headers, json=payload, timeout=10.0)
             if resp_fallback.status_code in [200, 201]:
                 logger.info(f"Fallback email delivered to {fallback_target} via Resend")
                 return True
+            else:
+                logger.warning(f"Fallback Resend delivery failed ({resp_fallback.status_code}): {resp_fallback.text}")
 
         logger.warning(f"Resend HTTPS API returned status {resp.status_code}: {resp.text}")
     except Exception as e:
@@ -62,6 +71,7 @@ def _send_via_brevo(to_email: str, subject: str, html_body: str) -> bool:
         "api-key": api_key,
         "Content-Type": "application/json",
         "accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     }
     from_addr = (getattr(settings, "smtp_from_email", "") or getattr(settings, "smtp_username", "") or "inkwake2025@gmail.com").strip()
     payload = {
