@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/auth/api_client.dart';
+import '../../../shared/utils/time_utils.dart';
 import '../../../shared/widgets/chess_loading.dart';
+import '../../../shared/widgets/student_avatar.dart';
 import '../attendance/student_profile_screen.dart';
 import 'new_batch_screen.dart';
 import 'new_student_screen.dart';
@@ -141,10 +143,7 @@ class _StudentsList extends StatelessWidget {
                     if (s.parentAddress != null && s.parentAddress!.isNotEmpty) subtitleParts.add('📍 ${s.parentAddress}');
 
                     return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: s.genderBgColor,
-                        child: Icon(s.genderIcon, color: s.genderColor, size: 22),
-                      ),
+                      leading: StudentAvatar(student: s, radius: 22),
                       title: Row(
                         children: [
                           Expanded(
@@ -288,8 +287,10 @@ class _BatchesList extends StatelessWidget {
                   itemCount: batches.length,
                   itemBuilder: (context, index) {
                     final b = batches[index];
-                    final timing = (b.startTime != null && b.endTime != null)
-                        ? '${b.startTime} - ${b.endTime}'
+                    final start12 = format12HourAMPM(b.startTime);
+                    final end12 = format12HourAMPM(b.endTime);
+                    final timing = (start12.isNotEmpty && end12.isNotEmpty)
+                        ? '$start12 - $end12'
                         : 'Timing not set';
                     return ListTile(
                       leading: const CircleAvatar(child: Icon(Icons.groups_outlined)),

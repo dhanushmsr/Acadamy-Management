@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../../core/auth/api_client.dart';
+import '../../../shared/utils/time_utils.dart';
 import '../../../shared/widgets/app_button.dart';
 
 class NewBatchScreen extends StatefulWidget {
@@ -28,8 +28,26 @@ class _NewBatchScreenState extends State<NewBatchScreen> {
 
     if (widget.batchToEdit != null) {
       _nameController.text = widget.batchToEdit!.name;
-      _startTimeController.text = widget.batchToEdit!.startTime ?? '';
-      _endTimeController.text = widget.batchToEdit!.endTime ?? '';
+      _startTimeController.text = format12HourAMPM(widget.batchToEdit!.startTime);
+      _endTimeController.text = format12HourAMPM(widget.batchToEdit!.endTime);
+    }
+  }
+
+  Future<void> _selectTime(TextEditingController ctrl, {required int defaultHour}) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: defaultHour, minute: 0),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        ctrl.text = formatTimeOfDay12Hour(picked);
+      });
     }
   }
 
@@ -40,17 +58,20 @@ class _NewBatchScreenState extends State<NewBatchScreen> {
       _error = null;
     });
     try {
+      final startStr = _startTimeController.text.trim().isEmpty ? null : _startTimeController.text.trim();
+      final endStr = _endTimeController.text.trim().isEmpty ? null : _endTimeController.text.trim();
+
       if (widget.batchToEdit == null) {
         await _api.createBatch(
           name: _nameController.text.trim(),
-          startTime: _startTimeController.text.trim().isEmpty ? null : _startTimeController.text.trim(),
-          endTime: _endTimeController.text.trim().isEmpty ? null : _endTimeController.text.trim(),
+          startTime: startStr,
+          endTime: endStr,
         );
       } else {
         await _api.updateBatch(widget.batchToEdit!.id, {
           'name': _nameController.text.trim(),
-          'start_time': _startTimeController.text.trim().isEmpty ? null : _startTimeController.text.trim(),
-          'end_time': _endTimeController.text.trim().isEmpty ? null : _endTimeController.text.trim(),
+          'start_time': startStr,
+          'end_time': endStr,
         });
       }
       if (mounted) Navigator.pop(context, true);
@@ -80,24 +101,39 @@ class _NewBatchScreenState extends State<NewBatchScreen> {
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(
-              labelText: 'Batch Name',
+              labelText: 'Batch Name *',
               hintText: 'e.g. King Chess Junior Batch',
+              prefixIcon: Icon(Icons.groups_rounded),
             ),
           ),
           const SizedBox(height: 16),
+          const Text('Batch Timings (12-Hour AM/PM)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _startTimeController,
-                  decoration: const InputDecoration(labelText: 'Start Time', hintText: '18:30'),
+                  readOnly: true,
+                  onTap: () => _selectTime(_startTimeController, defaultHour: 18),
+                  decoration: const InputDecoration(
+                    labelText: 'Start Time',
+                    hintText: 'e.g. 6:00 PM',
+                    prefixIcon: Icon(Icons.access_time_rounded, color: Colors.indigo),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
                   controller: _endTimeController,
-                  decoration: const InputDecoration(labelText: 'End Time', hintText: '20:30'),
+                  readOnly: true,
+                  onTap: () => _selectTime(_endTimeController, defaultHour: 20),
+                  decoration: const InputDecoration(
+                    labelText: 'End Time',
+                    hintText: 'e.g. 8:00 PM',
+                    prefixIcon: Icon(Icons.access_time_filled_rounded, color: Colors.indigo),
+                  ),
                 ),
               ),
             ],
@@ -108,7 +144,7 @@ class _NewBatchScreenState extends State<NewBatchScreen> {
           ],
           const SizedBox(height: 24),
           AppButton(
-            label: _saving ? 'Saving...' : 'Save',
+            label: _saving ? 'Saving...' : 'Save Batch',
             onPressed: _saving ? null : _save,
           ),
         ],

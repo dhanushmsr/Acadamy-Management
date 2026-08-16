@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../core/auth/api_client.dart';
 import '../../core/auth/auth_state.dart';
+import '../../shared/utils/time_utils.dart';
 import 'people/people_screen.dart';
 import 'expenses/expenses_screen.dart';
 import 'materials/materials_screen.dart';
@@ -718,7 +719,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        c['timing']?.toString() ?? 'Timing not set',
+                                        format12HourAMPM(c['timing']?.toString() ?? 'Timing not set'),
                                         style: const TextStyle(fontSize: 12, color: Colors.white70),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
