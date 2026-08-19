@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -18,21 +19,63 @@ class ActmacApp extends StatefulWidget {
   State<ActmacApp> createState() => _ActmacAppState();
 }
 
-class _ActmacAppState extends State<ActmacApp> {
-  // Created once per app lifetime - the router is NOT rebuilt on every
-  // frame, it just listens to _authState via refreshListenable and
-  // re-evaluates its redirect rule whenever login/logout happens.
-  // _apiClient is shared with _authState (not a separate instance) so
-  // that once AuthState.login() sets the auth token, every other screen
-  // reading ApiClient via Provider gets an already-authenticated client.
+class _ActmacAppState extends State<ActmacApp> with WidgetsBindingObserver {
   late final ApiClient _apiClient = ApiClient();
   late final AuthState _authState = AuthState(_apiClient);
   late final GoRouter _router = buildRouter(_authState);
 
+  // Inactivity timeout duration (e.g. 30 minutes of no user interaction)
+  static const Duration _inactivityTimeout = Duration(minutes: 30);
+  Timer? _inactivityTimer;
+  DateTime? _lastBackgroundedTime;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _authState.initSession();
+    _resetInactivityTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Resets the inactivity timer whenever user interaction is detected.
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    if (_authState.isLoggedIn) {
+      _inactivityTimer = Timer(_inactivityTimeout, _handleInactivityTimeout);
+    }
+  }
+
+  void _handleInactivityTimeout() {
+    if (_authState.isLoggedIn) {
+      debugPrint('[Session] Auto-logging out due to inactivity');
+      _authState.autoLogoutDueToInactivity();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      // App went to background
+      _lastBackgroundedTime = DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      // App returned to foreground
+      if (_lastBackgroundedTime != null && _authState.isLoggedIn) {
+        final elapsed = DateTime.now().difference(_lastBackgroundedTime!);
+        // If away for more than 15 minutes, auto-logout
+        if (elapsed > const Duration(minutes: 15)) {
+          debugPrint('[Session] Auto-logging out after returning from background');
+          _authState.autoLogoutDueToInactivity();
+        }
+      }
+      _resetInactivityTimer();
+    }
   }
 
   @override
@@ -42,11 +85,18 @@ class _ActmacAppState extends State<ActmacApp> {
         Provider<ApiClient>.value(value: _apiClient),
         ChangeNotifierProvider<AuthState>.value(value: _authState),
       ],
-      child: MaterialApp.router(
-        title: 'AcD-Man',
-        theme: AppTheme.light(),
-        routerConfig: _router,
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => _resetInactivityTimer(),
+        onPointerMove: (_) => _resetInactivityTimer(),
+        child: MaterialApp.router(
+          title: 'AcD-Man',
+          theme: AppTheme.light(),
+          routerConfig: _router,
+          debugShowCheckedModeBanner: false,
+        ),
       ),
     );
   }
 }
+

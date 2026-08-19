@@ -32,25 +32,65 @@ class AuthState extends ChangeNotifier {
   UserRole? get role => _role;
   String? get academyId => _academyId;
 
+  /// Initializes session on app launch. Fresh launches start logged out on the
+  /// login screen where cached device credentials will be pre-filled.
   Future<void> initSession() async {
-    try {
-      final token = await _storage.read(key: 'auth_token');
-      final roleStr = await _storage.read(key: 'auth_role');
-      final academyId = await _storage.read(key: 'auth_academy_id');
+    // Clear any previous raw session tokens so fresh app launch always begins
+    // on the Login screen with pre-filled credentials.
+    _token = null;
+    _role = null;
+    _academyId = null;
+    _api.setToken(null);
+    notifyListeners();
+  }
 
-      if (token != null && token.isNotEmpty && roleStr != null && roleStr.isNotEmpty) {
-        _token = token;
-        _role = roleFromString(roleStr);
-        _academyId = academyId;
-        _api.setToken(_token!);
-        notifyListeners();
-      }
+  /// Retrieve cached username/email and password stored on this device.
+  Future<Map<String, dynamic>> getSavedCredentials() async {
+    try {
+      final email = await _storage.read(key: 'saved_email');
+      final password = await _storage.read(key: 'saved_password');
+      final rememberStr = await _storage.read(key: 'remember_credentials');
+      final remember = rememberStr == null ? true : (rememberStr == 'true');
+      return {
+        'email': email ?? '',
+        'password': password ?? '',
+        'remember': remember,
+      };
     } catch (e) {
-      debugPrint('Error reading secure storage session: $e');
+      debugPrint('Error reading saved credentials: $e');
+      return {'email': '', 'password': '', 'remember': true};
     }
   }
 
-  Future<void> login(String email, String password) async {
+  /// Save or remove credentials from local device cache.
+  Future<void> saveCredentials(String email, String password, bool remember) async {
+    try {
+      if (remember) {
+        await _storage.write(key: 'saved_email', value: email);
+        await _storage.write(key: 'saved_password', value: password);
+        await _storage.write(key: 'remember_credentials', value: 'true');
+      } else {
+        await _storage.delete(key: 'saved_email');
+        await _storage.delete(key: 'saved_password');
+        await _storage.write(key: 'remember_credentials', value: 'false');
+      }
+    } catch (e) {
+      debugPrint('Error saving credentials to device: $e');
+    }
+  }
+
+  /// Clears saved credentials completely.
+  Future<void> clearSavedCredentials() async {
+    try {
+      await _storage.delete(key: 'saved_email');
+      await _storage.delete(key: 'saved_password');
+      await _storage.write(key: 'remember_credentials', value: 'false');
+    } catch (e) {
+      debugPrint('Error clearing saved credentials: $e');
+    }
+  }
+
+  Future<void> login(String email, String password, {bool rememberCredentials = true}) async {
     final response = await _api.login(email, password);
     _token = response['access_token'] as String;
     final roleStr = response['role'] as String;
@@ -58,35 +98,31 @@ class AuthState extends ChangeNotifier {
     _academyId = response['academy_id'] as String?;
     _api.setToken(_token!);
 
-    try {
-      await _storage.write(key: 'auth_token', value: _token);
-      await _storage.write(key: 'auth_role', value: roleStr);
-      if (_academyId != null) {
-        await _storage.write(key: 'auth_academy_id', value: _academyId);
-      } else {
-        await _storage.delete(key: 'auth_academy_id');
-      }
-    } catch (e) {
-      debugPrint('Error writing session to storage: $e');
-    }
+    // Save or clear credentials cache on device based on user preference
+    await saveCredentials(email, password, rememberCredentials);
 
     notifyListeners();
   }
 
+  /// User triggered logout
   Future<void> logout() async {
     _token = null;
     _role = null;
     _academyId = null;
     _api.setToken(null);
 
-    try {
-      await _storage.delete(key: 'auth_token');
-      await _storage.delete(key: 'auth_role');
-      await _storage.delete(key: 'auth_academy_id');
-    } catch (e) {
-      debugPrint('Error clearing session from storage: $e');
-    }
-
     notifyListeners();
   }
+
+  /// Automatic logout when app is idle / inactive / backgrounded
+  void autoLogoutDueToInactivity() {
+    if (_token != null) {
+      _token = null;
+      _role = null;
+      _academyId = null;
+      _api.setToken(null);
+      notifyListeners();
+    }
+  }
 }
+
