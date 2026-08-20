@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     database_url: str = "postgresql://postgres:postgres@localhost:5432/king_saas"
     secret_key: str = "change-this-to-a-long-random-secret"
@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str = "inkwake2025@gmail.com"
     smtp_password: str = ""
+    smtp_from_email: str = "inkwake2025@gmail.com"
     # HTTPS Email APIs (Render friendly - port 443)
     resend_api_key: str = ""
     brevo_api_key: str = ""
