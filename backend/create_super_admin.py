@@ -26,7 +26,7 @@ from app.models import User, UserRole
 SUPER_ADMIN_NAME = "Dhanush"
 SUPER_ADMIN_PHONE = "+919566960500"
 SUPER_ADMIN_EMAIL = "dhanushdsm6351364@gmail.com"
-SUPER_ADMIN_PASSWORD = "xJBv7Op24oM3C3"  # change this after first login
+SUPER_ADMIN_PASSWORD = "Sky#Blue99"  # change this after first login
 
 
 def main():
