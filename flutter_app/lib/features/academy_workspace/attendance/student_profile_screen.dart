@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -274,6 +275,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     final badgeIcon = _student?.genderIcon ?? Icons.male_rounded;
     final badgeLabel = _student?.genderLabel ?? 'Male';
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWeb = kIsWeb || screenWidth > 600;
+    final dojLabel = isWeb ? 'Date of Join' : 'DoJ';
+    final dojValue = _student?.formattedDoj ?? 'Not set';
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 3,
@@ -292,45 +298,110 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
                     ),
                   ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          widget.studentName,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.studentName,
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: badgeBg,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: badgeColor.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(badgeIcon, size: 13, color: badgeColor),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        badgeLabel,
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: badgeColor),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.indigo.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.indigo.shade200),
+                                  ),
+                                  child: Text(
+                                    'Level: $level',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo.shade800),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      // Small rectangle box for Date of Join (Web) / DoJ (Mobile)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: badgeBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: badgeColor.withOpacity(0.3)),
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF86EFAC), width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(badgeIcon, size: 16, color: badgeColor),
-                            const SizedBox(width: 4),
                             Text(
-                              badgeLabel,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: badgeColor),
+                              dojLabel,
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF15803D),
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              dojValue,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF166534),
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.class_outlined, size: 16, color: Colors.indigo),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.class_outlined, size: 15, color: Colors.indigo),
+                      const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           batchText,
@@ -342,8 +413,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.cake_outlined, size: 16, color: Colors.pink),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.cake_outlined, size: 15, color: Colors.pink),
+                      const SizedBox(width: 5),
                       Expanded(
                         child: Text(
                           _student?.formattedDobAndAge ?? 'DOB: Not set',
@@ -351,32 +422,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.event_available_rounded, size: 16, color: Colors.teal),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          'Joined: ${_student?.formattedDoj ?? 'Not set'}',
-                          style: const TextStyle(fontSize: 13, color: Colors.teal, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.indigo.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.indigo.shade200),
-                    ),
-                    child: Text(
-                      'Level: $level',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo.shade800),
-                    ),
                   ),
                 ],
               ),

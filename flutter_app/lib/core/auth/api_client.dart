@@ -790,13 +790,13 @@ class StudentSummary {
   }
 
   String get formattedDoj {
-    if (dateOfJoining == null || dateOfJoining!.isEmpty) return 'DOJ: Not set';
+    if (dateOfJoining == null || dateOfJoining!.isEmpty) return 'Not set';
     try {
       final doj = DateTime.parse(dateOfJoining!);
       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return '${doj.day.toString().padLeft(2, '0')} ${months[doj.month - 1]} ${doj.year}';
     } catch (_) {
-      return 'DOJ: $dateOfJoining';
+      return dateOfJoining!;
     }
   }
 
