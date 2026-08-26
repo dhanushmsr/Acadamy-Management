@@ -47,6 +47,7 @@ def _run_auto_migrations():
         "ALTER TABLE tournament_registrations ADD COLUMN IF NOT EXISTS amount_paid INTEGER DEFAULT 0;",
         "ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
         "ALTER TABLE students ADD COLUMN IF NOT EXISTS gender VARCHAR DEFAULT 'male';",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS date_of_joining TIMESTAMP;",
     ]
     for stmt in statements:
         try:

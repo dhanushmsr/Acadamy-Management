@@ -26,6 +26,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
   String? _selectedLevel;
   String _gender = 'male';
   DateTime? _dob;
+  DateTime? _doj;
   bool _saving = false;
   String? _error;
 
@@ -52,6 +53,15 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
           _dob = DateTime.parse(s.dateOfBirth!);
         } catch (_) {}
       }
+      if (s.dateOfJoining != null && s.dateOfJoining!.isNotEmpty) {
+        try {
+          _doj = DateTime.parse(s.dateOfJoining!);
+        } catch (_) {}
+      } else {
+        _doj = DateTime.now();
+      }
+    } else {
+      _doj = DateTime.now();
     }
   }
 
@@ -89,6 +99,30 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
     }
   }
 
+  Future<void> _pickDoj() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _doj ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1E2142),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E2142),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _doj = picked);
+    }
+  }
+
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty) return;
     setState(() {
@@ -98,12 +132,14 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
     try {
       final defaultFee = int.tryParse(_defaultFeeController.text.trim());
       final dobStr = _dob != null ? _dob!.toIso8601String() : null;
+      final dojStr = _doj != null ? _doj!.toIso8601String() : null;
 
       if (widget.studentToEdit == null) {
         // Create
         await _api.createStudent(
           name: _nameController.text.trim(),
           dateOfBirth: dobStr,
+          dateOfJoining: dojStr,
           batchId: _selectedBatchId,
           level: _selectedLevel,
           gender: _gender,
@@ -118,6 +154,7 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
         await _api.updateStudent(widget.studentToEdit!.id, {
           'name': _nameController.text.trim(),
           'date_of_birth': dobStr,
+          'date_of_joining': dojStr,
           'batch_id': _selectedBatchId,
           'level': _selectedLevel,
           'gender': _gender,
@@ -155,6 +192,9 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
     final dobText = _dob != null
         ? '${_dob!.day.toString().padLeft(2, '0')} ${months[_dob!.month - 1]} ${_dob!.year}'
         : 'Select Date of Birth';
+    final dojText = _doj != null
+        ? '${_doj!.day.toString().padLeft(2, '0')} ${months[_doj!.month - 1]} ${_doj!.year}'
+        : 'Select Joining Date';
     final age = _calculatedAge;
 
     return Scaffold(
@@ -295,6 +335,44 @@ class _NewStudentScreenState extends State<NewStudentScreen> {
                     ),
                   const SizedBox(width: 4),
                   const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Date of Joining (DOJ) Selector
+          InkWell(
+            onTap: _pickDoj,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.indigo.shade200),
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.indigo.shade50.withValues(alpha: 0.3),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.event_available_rounded, color: Colors.indigo),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Date of Joining Academy (DOJ) *', style: TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(
+                          dojText,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E2142),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.edit_calendar_rounded, size: 20, color: Colors.indigo),
                 ],
               ),
             ),

@@ -74,6 +74,7 @@ class ApiClient {
   Future<void> createStudent({
     required String name,
     String? dateOfBirth,
+    String? dateOfJoining,
     String? batchId,
     String? level,
     String? gender = 'male',
@@ -89,6 +90,7 @@ class ApiClient {
       body: jsonEncode({
         'name': name,
         'date_of_birth': dateOfBirth,
+        'date_of_joining': dateOfJoining,
         'batch_id': batchId,
         'level': level,
         'gender': gender ?? 'male',
@@ -726,6 +728,7 @@ class StudentSummary {
   final String id;
   final String name;
   final String? dateOfBirth;
+  final String? dateOfJoining;
   final String? level;
   final String? gender;
   final String? batchId;
@@ -740,6 +743,7 @@ class StudentSummary {
     required this.id,
     required this.name,
     this.dateOfBirth,
+    this.dateOfJoining,
     this.level,
     this.gender,
     this.batchId,
@@ -785,11 +789,23 @@ class StudentSummary {
     }
   }
 
+  String get formattedDoj {
+    if (dateOfJoining == null || dateOfJoining!.isEmpty) return 'DOJ: Not set';
+    try {
+      final doj = DateTime.parse(dateOfJoining!);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${doj.day.toString().padLeft(2, '0')} ${months[doj.month - 1]} ${doj.year}';
+    } catch (_) {
+      return 'DOJ: $dateOfJoining';
+    }
+  }
+
   factory StudentSummary.fromJson(Map<String, dynamic> json) {
     return StudentSummary(
       id: json['id'] as String,
       name: json['name'] as String,
       dateOfBirth: json['date_of_birth'] as String?,
+      dateOfJoining: json['date_of_joining'] as String?,
       level: json['level'] as String?,
       gender: json['gender'] as String? ?? 'male',
       batchId: json['batch_id'] as String?,

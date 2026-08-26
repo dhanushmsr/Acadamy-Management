@@ -114,6 +114,7 @@ class CoachCreate(BaseModel):
 class StudentCreate(BaseModel):
     name: str
     date_of_birth: Optional[datetime] = None
+    date_of_joining: Optional[datetime] = None
     level: Optional[str] = None
     gender: Optional[str] = "male"
     batch_id: Optional[str] = None
@@ -129,6 +130,7 @@ class StudentCreate(BaseModel):
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
     date_of_birth: Optional[datetime] = None
+    date_of_joining: Optional[datetime] = None
     level: Optional[str] = None
     gender: Optional[str] = None
     batch_id: Optional[str] = None
@@ -147,6 +149,7 @@ class StudentOut(BaseModel):
     student_number: Optional[int] = None
     name: str
     date_of_birth: Optional[datetime] = None
+    date_of_joining: Optional[datetime] = None
     level: Optional[str] = None
     gender: Optional[str] = "male"
     batch_id: Optional[str] = None

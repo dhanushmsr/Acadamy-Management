@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/auth/api_client.dart';
 import '../../../core/auth/auth_state.dart';
 import '../../../shared/widgets/chess_loading.dart';
+import '../../../shared/widgets/student_avatar.dart';
 
 import '../people/new_student_screen.dart';
 
@@ -268,8 +269,6 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   Widget _buildHeaderCard() {
     final batchText = _student?.batchName ?? 'No Batch Assigned';
     final level = _student?.level ?? 'Standard';
-    final isFemale = _student?.isFemale ?? false;
-    final avatarColor = isFemale ? const Color(0xFFDB2777) : const Color(0xFF2563EB);
     final badgeBg = _student?.genderBgColor ?? const Color(0xFFEFF6FF);
     final badgeColor = _student?.genderColor ?? const Color(0xFF2563EB);
     final badgeIcon = _student?.genderIcon ?? Icons.male_rounded;
@@ -281,15 +280,18 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: avatarColor,
-              child: Text(
-                widget.studentName.isNotEmpty ? widget.studentName[0].toUpperCase() : 'S',
-                style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-            ),
+            _student != null
+                ? StudentAvatar(student: _student!, radius: 34)
+                : CircleAvatar(
+                    radius: 34,
+                    backgroundColor: const Color(0xFF2563EB),
+                    child: Text(
+                      widget.studentName.isNotEmpty ? widget.studentName[0].toUpperCase() : 'S',
+                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                    ),
+                  ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -324,7 +326,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       const Icon(Icons.class_outlined, size: 16, color: Colors.indigo),
@@ -350,7 +352,20 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.event_available_rounded, size: 16, color: Colors.teal),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Joined: ${_student?.formattedDoj ?? 'Not set'}',
+                          style: const TextStyle(fontSize: 13, color: Colors.teal, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
@@ -377,6 +392,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     final parentPhone = _student?.parentPhone ?? 'Not specified';
     final parentEmail = _student?.parentEmail ?? 'Not specified';
     final parentAddress = _student?.parentAddress ?? 'Not specified';
+    final dojText = _student?.formattedDoj ?? 'Not specified';
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -390,10 +406,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               children: [
                 Icon(Icons.family_restroom, color: Colors.indigo),
                 SizedBox(width: 8),
-                Text('Parent & Location Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('Parent & Academy Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
             const Divider(height: 20),
+            _infoRow(Icons.event_available, 'Date of Joining', dojText),
+            const SizedBox(height: 8),
             _infoRow(Icons.person, 'Parent Name', parentName),
             const SizedBox(height: 8),
             _infoRow(Icons.phone, 'Parent Phone', parentPhone),
