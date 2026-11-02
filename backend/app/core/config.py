@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     # SMTP (payment receipt emails) - see backend/README.md for Gmail App Password setup
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
-    smtp_username: str = "inkwake2025@gmail.com"
+    smtp_username: str = ""
     smtp_password: str = ""
-    smtp_from_email: str = "inkwake2025@gmail.com"
+    smtp_from_email: str = ""
     # HTTPS Email APIs (Render friendly - port 443)
     resend_api_key: str = ""
     brevo_api_key: str = ""
